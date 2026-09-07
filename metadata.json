@@ -1,0 +1,10 @@
+{
+  "name": "SonicArc MusicTech Blueprint",
+  "description": "Advanced technical blueprint, seed-pitch deck, and interactive audio processing sandbox for a real-time 'Shazam for Musicians' startup.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
