@@ -3,6 +3,29 @@ export interface Message {
   content: string;
 }
 
+export interface ChordSegment {
+  chord: string;
+  start: number;
+  end: number;
+  confidence: number;
+}
+
+export interface ChordAnalysis {
+  key: string;
+  key_confidence?: number;
+  bpm: number | null;
+  bpm_confidence?: number | null;
+  duration: number;
+  chords: ChordSegment[];
+  method?: string;
+}
+
+export interface ChordAnalysisResponse {
+  analysis: ChordAnalysis;
+  filename: string;
+  mime_type?: string;
+}
+
 export interface SqlTable {
   name: string;
   description: string;
