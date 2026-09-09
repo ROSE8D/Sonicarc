@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Guitar, Piano, Sparkles } from "lucide-react";
+import { ArrowUpRight, Guitar, Piano } from "lucide-react";
 
 export type Instrument = "Guitar" | "Piano";
 type Skill = "Beginner" | "Intermediate" | "Advanced";
@@ -18,9 +18,9 @@ export function PlayItYourself({ instrument, onInstrumentChange }: Props) {
       </div>
       <div className="choice-group">
         <span className="choice-label">Instrument</span>
-        <div className="segmented">
+        <div className="segmented" role="group" aria-label="Instrument">
           {(["Guitar", "Piano"] as Instrument[]).map(value => (
-            <button key={value} className={instrument === value ? "active" : ""} onClick={() => onInstrumentChange(value)}>
+            <button key={value} aria-pressed={instrument === value} className={instrument === value ? "active" : ""} onClick={() => onInstrumentChange(value)}>
               {value === "Guitar" ? <Guitar size={18} /> : <Piano size={18} />}{value}
             </button>
           ))}
@@ -28,13 +28,13 @@ export function PlayItYourself({ instrument, onInstrumentChange }: Props) {
       </div>
       <div className="choice-group">
         <span className="choice-label">Skill level</span>
-        <div className="segmented">
+        <div className="segmented" role="group" aria-label="Skill level">
           {(["Beginner", "Intermediate", "Advanced"] as Skill[]).map(value => (
-            <button key={value} className={skill === value ? "active" : ""} onClick={() => setSkill(value)}>{value}</button>
+            <button key={value} aria-pressed={skill === value} className={skill === value ? "active" : ""} onClick={() => setSkill(value)}>{value}</button>
           ))}
         </div>
       </div>
-      <button className="adapt-button" onClick={() => setNotice(true)}><Sparkles size={18} /> Adapt for me</button>
+      <button className="adapt-button" onClick={() => setNotice(true)}>Adapt for me <ArrowUpRight size={16} aria-hidden="true" /></button>
       {notice && <p className="integration-notice" role="status">Personalized arrangements are coming soon. Your choices are ready for the future integration.</p>}
     </section>
   );

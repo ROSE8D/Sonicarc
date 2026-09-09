@@ -1,6 +1,4 @@
-import { Music2 } from "lucide-react";
-
-export type TurntableState = "idle" | "loading" | "success" | "error";
+export type TurntableState = "idle" | "recording" | "loading" | "success" | "error";
 
 interface Props {
   state: TurntableState;
@@ -10,7 +8,8 @@ interface Props {
 const waveBars = [34, 62, 45, 78, 52, 88, 58, 72, 40, 66, 32];
 
 export function Turntable({ state, compact = false }: Props) {
-  const status = state === "loading"
+  const status = state === "recording" ? "Recording audio"
+    : state === "loading"
     ? "Audio is being analyzed"
     : state === "success"
       ? "Analysis complete"
@@ -20,13 +19,12 @@ export function Turntable({ state, compact = false }: Props) {
 
   return (
     <div className={`turntable-stage is-${state} ${compact ? "is-compact" : ""}`} role="img" aria-label={status}>
-      <div className="turntable-shadow" aria-hidden="true" />
       <div className="turntable-deck" aria-hidden="true">
         <div className="platter-rim">
           <div className="platter-mat" />
           <div className="vinyl">
-            <div className="vinyl-grooves" />
-            <div className="vinyl-label"><Music2 size={compact ? 12 : 22} strokeWidth={1.8} /></div>
+            <div className="vinyl-grooves">{Array.from({ length: 19 }, (_, index) => <i key={index} style={{ inset: `${3 + index * 1.45}%` }} />)}</div>
+            <div className="vinyl-label"><span className="label-top">SOUND INTO SOMETHING</span><strong>sonicarc.</strong><span className="label-bottom">SIDE A <span>33⅓</span></span></div>
           </div>
           <span className="spindle" />
         </div>
@@ -37,7 +35,7 @@ export function Turntable({ state, compact = false }: Props) {
         </div>
         <div className="deck-controls">
           <span className="power-light" />
-          <span className="speed-switch" />
+          <span className="deck-caption">{state === "recording" ? "REC" : state === "loading" ? "ANALYZING" : state === "success" ? "MAPPED" : "STANDBY"}</span>
         </div>
       </div>
       {state === "loading" && (

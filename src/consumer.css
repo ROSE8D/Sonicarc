@@ -1,0 +1,320 @@
+/* Consumer listening desk. Kept separate from the developer dashboard. */
+@font-face { font-family: 'SonicArc Sans'; font-style: normal; font-weight: 100 1000; font-display: swap; src: url('/fonts/dm-sans-latin-wght-normal.woff2') format('woff2'); }
+@font-face { font-family: 'DM Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/dm-mono-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Instrument Serif'; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/instrument-serif-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Instrument Serif'; font-style: italic; font-weight: 400; font-display: swap; src: url('/fonts/instrument-serif-latin-400-italic.woff2') format('woff2'); }
+
+.user-app {
+  --paper: #f5f2e9;
+  --ink: #262923;
+  --muted: #66695f;
+  --rule: #cccbbd;
+  --accent: #b94029;
+  --mono: 'DM Mono', 'Courier New', monospace;
+  min-height: 100vh;
+  padding: 0 clamp(22px, 4.5vw, 88px);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'SonicArc Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.user-app * { box-sizing: border-box; }
+.user-app button, .user-app a { touch-action: manipulation; }
+.user-app button { cursor: pointer; }
+.user-app button:disabled { cursor: wait; opacity: .55; }
+.user-app :focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+.user-app ::selection { background: #efb39b; color: var(--ink); }
+.user-app .skip-link { position: absolute; z-index: 20; top: -70px; background: var(--ink); color: var(--paper); padding: 12px; }
+.user-app .skip-link:focus { top: 12px; }
+.user-app .user-nav, .user-app main, .user-app .user-footer { max-width: 1440px; margin-inline: auto; }
+.user-app .user-nav { height: 94px; padding: 0; border-bottom: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.user-app .brand { display: flex; gap: 9px; align-items: center; text-decoration: none; color: var(--ink); font: 700 31px/1 'SonicArc Sans', sans-serif; letter-spacing: -1.7px; }
+.user-app .brand-mark { width: 34px; height: 36px; color: var(--accent); background: none; border-radius: 0; }
+.user-app .brand-period { color: var(--accent); }
+.user-app .nav-manifesto { margin: 0; font-size: 12px; color: var(--muted); }
+.user-app .dev-link { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; text-decoration: none; }
+.user-app .dev-link::after { content: none; }
+.user-app .dev-link:hover { color: var(--accent); }
+.user-app .session-intro { padding: 40px 0 36px; display: flex; justify-content: space-between; align-items: flex-end; gap: 40px; }
+.user-app .eyebrow { display: flex; gap: 15px; margin: 0 0 18px; color: var(--muted); font: 400 10px/1.5 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.user-app .index-number { color: var(--accent); }
+.user-app .session-intro h1 { margin: 0; font: 500 clamp(38px, 4.15vw, 67px)/1.03 'SonicArc Sans', sans-serif; letter-spacing: -.055em; }
+.user-app .session-intro h1 em { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 1.11em; letter-spacing: -.025em; }
+.user-app .intro-description { max-width: 285px; margin: 0 0 3px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+.user-app .listening-desk { position: relative; display: grid; grid-template-columns: 1.2fr 1fr; border: 1px solid #babbac; scroll-margin-top: 20px; }
+.user-app .desk-bar { grid-column: 1 / -1; min-height: 43px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 24px; background: #eae9dd; border-bottom: 1px solid #babbac; }
+.user-app .desk-title, .user-app .session-status { font: 400 10px/1.5 var(--mono); }
+.user-app .desk-title { text-transform: uppercase; letter-spacing: .12em; }
+.user-app .session-status { display: flex; align-items: center; gap: 8px; color: #575f4e; }
+.user-app .session-status i { width: 6px; height: 6px; border-radius: 50%; background: #68785b; }
+.user-app .record-side { position: relative; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 21px 27px 15px; background: #dfdfcc; border-right: 1px solid #babbac; }
+.user-app .record-caption, .user-app .record-footnote { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+.user-app .record-caption { font: 400 9px/1.4 var(--mono); letter-spacing: .09em; color: #555b4e; }
+.user-app .record-footnote { font: 400 11px/1.5 'Instrument Serif', Georgia, serif; font-style: italic; color: #555b4e; }
+.user-app .record-signature { font: italic 27px/1 'Instrument Serif', Georgia, serif; letter-spacing: -2px; }
+.user-app .desk-readout { display: flex; align-items: center; min-width: 0; padding: 42px clamp(28px, 4vw, 66px); background: #eeeee3; }
+.user-app .desk-readout > div { width: 100%; }
+.user-app .desk-readout h2 { font: 500 clamp(28px, 2.8vw, 43px)/1.15 'SonicArc Sans', sans-serif; letter-spacing: -.04em; margin: 0; }
+.user-app .desk-readout h2 em { font-family: 'Instrument Serif', Georgia, serif; font-size: 1.13em; font-weight: 400; letter-spacing: -.025em; }
+.user-app .input-description { margin: 18px 0 25px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+.user-app .input-actions { display: flex; flex-direction: column; gap: 10px; }
+.user-app .primary-action, .user-app .secondary-action, .user-app .adapt-button { display: flex; align-items: center; justify-content: center; gap: 11px; min-height: 51px; padding: 14px 18px; border-radius: 2px; font-size: 13px; font-weight: 550; transition: background .18s, color .18s, transform .18s; }
+.user-app .primary-action { border: 1px solid var(--accent); background: var(--accent); color: #fffaf0; }
+.user-app .primary-action span { flex: 1; text-align: left; }
+.user-app .primary-action:hover { background: #9f3421; border-color: #9f3421; }
+.user-app .primary-action:hover svg:last-child { transform: translate(2px, -2px); }
+.user-app .primary-action svg { transition: transform .18s; }
+.user-app .secondary-action { border: 1px solid #babdaf; background: transparent; color: var(--ink); }
+.user-app .secondary-action:hover { background: #e1e3d5; }
+.user-app .secondary-action.recording { border-color: var(--accent); background: var(--accent); color: #fffaf0; }
+.user-app .secondary-action.recording:hover { background: #9f3421; }
+.user-app .primary-action:active, .user-app .secondary-action:active { transform: translateY(1px); }
+.user-app .formats { margin: 15px 0 0; color: var(--muted); font-size: 11px; line-height: 1.8; }
+.user-app .formats span { font: 400 9px/1.6 var(--mono); }
+.user-app .user-error { padding: 12px 0 0; margin: 16px 0 0; border: 0; border-top: 1px solid #c8907e; color: #9d3324; background: transparent; font-size: 12px; line-height: 1.6; }
+.user-app .session-guide { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0; padding: 28px 0 34px; list-style: none; }
+.user-app .session-guide li { display: flex; gap: 17px; padding: 0 24px; border-left: 1px solid var(--rule); }
+.user-app .session-guide li:first-child { border: 0; padding-left: 0; }
+.user-app .session-guide li > span { font: 400 11px/1.8 var(--mono); color: var(--muted); }
+.user-app .session-guide .current > span { color: var(--accent); }
+.user-app .session-guide strong { font-size: 13px; font-weight: 550; }
+.user-app .session-guide p { margin: 5px 0 0; font-size: 11px; color: var(--muted); }
+.user-app .user-footer { padding: 21px 0 24px; border-top: 1px solid var(--rule); display: flex; justify-content: space-between; gap: 20px; color: var(--muted); font: 400 9px/1.6 var(--mono); }
+.user-app .user-footer span:first-child { font-weight: 400; letter-spacing: .05em; }
+.user-app .user-footer > span:last-child { font: italic 15px 'Instrument Serif', Georgia, serif; }
+.user-app .footer-arc { margin-left: 14px; color: var(--accent); }
+
+/* A flat, tactile record deck: the grooves are real concentric rules. */
+.user-app .turntable-stage { position: relative; isolation: isolate; display: grid; place-items: center; width: min(100%, 550px); aspect-ratio: 1.48; margin: 9px auto 7px; }
+.user-app .turntable-deck { position: relative; width: 100%; height: 100%; aspect-ratio: auto; border: 0; border-radius: 0; background: none; box-shadow: none; transform: none; }
+.user-app .turntable-deck::after { content: none; }
+.user-app .platter-rim { position: absolute; top: 1%; left: 5%; width: 66%; aspect-ratio: 1; display: grid; place-items: center; border: 2px solid #777c6b; border-radius: 50%; background: #b4b8a7; box-shadow: 0 3px 0 #a6aa98; }
+.user-app .platter-mat { position: absolute; inset: 1.3%; border-radius: 50%; background: #383d33; }
+.user-app .vinyl { position: absolute; inset: 3%; border-radius: 50%; background: #272b27; box-shadow: inset 0 0 0 2px #3b4038; opacity: 1; transform: none; transition: transform .8s, opacity .5s; }
+.user-app .vinyl-grooves { position: absolute; inset: 1%; border-radius: 50%; background: none; }
+.user-app .vinyl-grooves i { position: absolute; border: 1px solid #44493e; border-radius: 50%; }
+.user-app .vinyl-grooves i:nth-child(3n) { border-color: #343a32; }
+.user-app .vinyl-label { position: absolute; inset: 32%; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 17% 5% 12%; border-radius: 50%; background: #c65236; color: #1f2821; box-shadow: none; }
+.user-app .vinyl-label::after { content: none; }
+.user-app .vinyl-label strong { position: absolute; top: 25%; font-size: clamp(15px, 1.9vw, 29px); letter-spacing: -.065em; font-weight: 700; }
+.user-app .label-top { position: absolute; top: 14%; font: 500 clamp(3px, .38vw, 6px) var(--mono); letter-spacing: .04em; }
+.user-app .label-bottom { position: absolute; bottom: 19%; width: 62%; display: flex; justify-content: space-between; font: 500 clamp(4px, .5vw, 7px) var(--mono); border-top: 1px solid #823d2b; padding-top: 4%; }
+.user-app .spindle { position: absolute; width: 7px; aspect-ratio: 1; z-index: 3; border-radius: 50%; background: #f3f0df; box-shadow: 0 0 0 2px #a03e2a; }
+.user-app .tonearm { position: absolute; right: 7%; top: 5%; width: 27%; height: 76%; transform-origin: 78% 13%; transform: rotate(-7deg); transition: transform 1.1s cubic-bezier(.3,.7,.2,1); }
+.user-app .tonearm-pivot { position: absolute; right: 3%; top: 0; width: 32%; aspect-ratio: 1; border-radius: 50%; background: #30382e; border: 8px solid #b2b6a5; box-shadow: 0 0 0 1px #858b77; }
+.user-app .tonearm-bar { position: absolute; right: 17%; top: 13%; width: 7px; height: 72%; border-radius: 2px; background: #929b85; border-left: 2px solid #e4e7d8; box-shadow: 2px 2px 0 #939b8580; transform-origin: top; transform: rotate(13deg); }
+.user-app .tonearm-head { position: absolute; left: 26%; bottom: 8%; width: 24%; height: 12%; background: #333b30; border-radius: 1px; border-bottom: 3px solid #b94029; transform: rotate(13deg); }
+.user-app .deck-controls { position: absolute; right: 4%; bottom: 4%; display: flex; gap: 7px; align-items: center; }
+.user-app .power-light { width: 5px; aspect-ratio: 1; border-radius: 50%; background: #74825f; box-shadow: none; }
+.user-app .deck-caption { color: #535b4b; font: 400 7px var(--mono); letter-spacing: .08em; }
+.user-app .turntable-wave { position: absolute; left: auto; right: 2%; bottom: 18%; width: 19%; height: 23px; display: flex; justify-content: center; align-items: center; gap: 3px; }
+.user-app .turntable-wave i { width: 2px; min-height: 3px; background: var(--accent); animation: desk-wave .7s ease-in-out infinite alternate; }
+.user-app .is-idle .vinyl { transform: rotate(-18deg); }
+.user-app .is-loading .vinyl, .user-app .is-success .vinyl, .user-app .is-recording .vinyl { opacity: 1; animation: desk-spin 12s linear infinite; }
+.user-app .is-loading .tonearm, .user-app .is-success .tonearm, .user-app .is-recording .tonearm { transform: rotate(25deg); transition-delay: .2s; }
+.user-app .is-error .vinyl { opacity: .75; transform: rotate(-18deg); }
+.user-app .is-error .power-light, .user-app .is-recording .power-light, .user-app .is-loading .power-light { background: var(--accent); box-shadow: none; }
+.user-app .is-compact { width: 116px; }
+.user-app .state-recording .session-status, .user-app .state-error .session-status { color: var(--accent); }
+.user-app .state-recording .session-status i, .user-app .state-error .session-status i { background: var(--accent); }
+.user-app .state-recording .session-status i { animation: desk-breathe 1.2s ease-in-out infinite alternate; }
+.user-app .recording-time { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; font: 400 37px var(--mono); font-variant-numeric: tabular-nums; }
+.user-app .recording-time i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.user-app .recording-time span { margin-left: auto; color: var(--accent); font: 400 10px var(--mono); }
+.user-app .analysis-filename { margin: 25px 0 18px; overflow-wrap: anywhere; color: var(--muted); font-size: 13px; }
+.user-app .analysis-meter { height: 3px; background: #d2d5c6; overflow: hidden; }
+.user-app .analysis-meter span { display: block; height: 100%; width: 28%; background: var(--accent); animation: desk-scan 2.4s ease-in-out infinite alternate; }
+.user-app .analysis-note { color: var(--accent); font: 400 10px var(--mono); }
+.user-app .drop-overlay { position: absolute; inset: 43px 0 0; z-index: 5; background: #dfdfccf5; outline: 2px dashed var(--accent); outline-offset: -12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; pointer-events: none; color: var(--accent); }
+.user-app .drop-overlay strong { font: italic 42px 'Instrument Serif', Georgia, serif; }
+.user-app .drop-overlay span { font-size: 13px; color: var(--ink); }
+
+/* The same desk becomes the chord readout; the progression is a score below. */
+.user-app .session-intro.has-result { min-height: 184px; align-items: center; }
+.user-app .session-intro.has-result > div { min-width: 0; }
+.user-app .session-intro.has-result h1 { font-size: clamp(29px, 3.5vw, 52px); overflow-wrap: anywhere; }
+.user-app .back-button { flex: none; display: flex; align-items: center; gap: 8px; margin: 0; padding: 12px 0; border: 0; border-bottom: 1px solid var(--rule); background: none; color: var(--muted); font-size: 12px; }
+.user-app .back-button:hover { color: var(--accent); border-color: var(--accent); }
+.user-app .chord-readout { padding: 11px 0 25px; animation: readout-in .25s ease-out; }
+.user-app .readout-label { color: var(--muted); font: 400 10px var(--mono); }
+.user-app .chord-readout h2 { font: 400 clamp(38px, 5.5vw, 78px)/1.1 'Instrument Serif', Georgia, serif; letter-spacing: -.03em; margin: 8px 0; overflow-wrap: anywhere; }
+.user-app .chord-readout p { margin: 0; font: 400 10px var(--mono); color: var(--accent); }
+.user-app .song-stats { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px; padding: 20px 0 0; margin: 0; border-top: 1px solid #c4c8b8; }
+.user-app .song-stats div { min-width: 0; }
+.user-app .song-stats dt, .user-app .choice-label { font: 400 9px var(--mono); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.user-app .song-stats dd { font: 500 19px 'SonicArc Sans', sans-serif; letter-spacing: -.03em; margin: 7px 0 0; }
+.user-app .song-stats small { font: 400 9px var(--mono); color: var(--muted); }
+.user-app .readout-hint { color: var(--muted); font-size: 11px; margin: 23px 0 0; }
+.user-app .results-page { max-width: none; margin: 0; padding: 0 0 40px; }
+.user-app .progression-section { padding: 35px 0 30px; border: 0; border-bottom: 1px solid var(--rule); }
+.user-app .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
+.user-app .section-heading .eyebrow { margin-bottom: 8px; }
+.user-app .section-heading h2, .user-app .play-section h2 { font: 500 30px 'SonicArc Sans', sans-serif; letter-spacing: -.045em; margin: 0; }
+.user-app .section-heading > p { margin: 0 0 3px; font: 400 10px var(--mono); color: var(--muted); }
+.user-app .section-heading > p span { color: var(--accent); margin-left: 15px; }
+.user-app .timeline-wrap { overflow-x: auto; padding: 7px 3px 14px; scrollbar-color: #7b826d #e4e4d6; scrollbar-width: thin; }
+.user-app .timeline { display: flex; gap: 2px; min-width: 100%; }
+.user-app .chord-segment { flex-shrink: 0; min-width: 120px; min-height: 148px; padding: 14px 15px; display: flex; flex-direction: column; align-items: flex-start; text-align: left; background: #e4e5d6; border: 0; border-top: 2px solid #7c866b; color: var(--ink); transition: background .2s, color .2s; animation: none; }
+.user-app .chord-segment:nth-child(3n+2), .user-app .chord-segment:nth-child(3n) { border-color: #7c866b; }
+.user-app .chord-segment:hover { background: #d4d9c3; transform: none; }
+.user-app .chord-segment.is-selected { background: var(--ink); color: var(--paper); border-color: var(--accent); transform: none; }
+.user-app .chord-segment strong { font: 400 25px 'Instrument Serif', Georgia, serif; }
+.user-app .chord-segment .segment-number { font: 400 8px var(--mono); color: var(--muted); margin: 0 0 10px; }
+.user-app .chord-segment .segment-time { margin-top: auto; padding-top: 17px; font: 400 10px var(--mono); }
+.user-app .chord-segment small { font: 400 8px/1.6 var(--mono); color: var(--muted); margin-top: 5px; }
+.user-app .chord-segment.is-selected small, .user-app .chord-segment.is-selected .segment-number { color: #c2c8b5; }
+.user-app .chord-detail { display: flex; align-items: center; gap: 22px; margin-top: 8px; padding: 14px 0 0; background: none; }
+.user-app .chord-detail strong { font: 400 23px 'Instrument Serif', Georgia, serif; flex: none; }
+.user-app .chord-detail p { font-size: 11px; color: var(--muted); margin: 0; line-height: 1.6; }
+.user-app .play-section { display: grid; grid-template-columns: 1.3fr 1fr 1.5fr; align-items: start; gap: 24px; padding-top: 32px; }
+.user-app .play-section .eyebrow { margin-bottom: 8px; }
+.user-app .play-section > div:first-child { grid-row: span 2; }
+.user-app .play-section > div:first-child p:last-child { color: var(--muted); font-size: 12px; line-height: 1.7; max-width: 300px; margin: 12px 0 0; }
+.user-app .choice-group { display: flex; flex-direction: column; gap: 12px; }
+.user-app .segmented { display: flex; padding: 0; border: 1px solid #babbac; border-radius: 2px; background: none; }
+.user-app .segmented button { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 43px; padding: 10px; font-size: 11px; border: 0; border-radius: 0; color: var(--muted); background: none; }
+.user-app .segmented button:hover { background: #e4e5d6; }
+.user-app .segmented button.active { color: var(--paper); background: #555f47; box-shadow: none; }
+.user-app .adapt-button { grid-column: 2; min-height: 42px; padding: 10px 16px; justify-self: start; background: none; border: 1px solid #a9ad9d; color: var(--ink); font-size: 12px; }
+.user-app .adapt-button:hover { background: #e4e5d6; }
+.user-app .integration-notice { grid-column: 3; margin: 0; font-size: 11px; line-height: 1.6; color: var(--muted); }
+
+@keyframes desk-spin { to { transform: rotate(360deg); } }
+@keyframes desk-wave { to { transform: scaleY(.3); opacity: .4; } }
+@keyframes desk-breathe { to { opacity: .35; } }
+@keyframes desk-scan { to { transform: translateX(260%); } }
+@keyframes readout-in { from { opacity: .4; transform: translateY(5px); } }
+
+@media (min-width: 1600px) {
+  .user-app .session-intro { padding-block: 48px; }
+  .user-app .record-side { padding: 25px 34px 20px; }
+  .user-app .turntable-stage { width: 590px; margin-block: 18px; }
+  .user-app .desk-readout { padding-block: 50px; }
+  .user-app .input-actions { max-width: 390px; }
+}
+@media (max-width: 1050px) {
+  .user-app { padding-inline: 30px; }
+  .user-app .session-intro { gap: 25px; }
+  .user-app .intro-description { max-width: 235px; font-size: 12px; }
+  .user-app .listening-desk { grid-template-columns: 1.05fr 1fr; }
+  .user-app .record-side { padding-inline: 18px; justify-content: space-between; }
+  .user-app .turntable-stage { aspect-ratio: 1.3; }
+  .user-app .platter-rim { width: 74%; left: 0; top: 8%; }
+  .user-app .tonearm { right: 3%; top: 7%; height: 75%; }
+  .user-app .desk-readout { padding: 30px; }
+  .user-app .record-caption { font-size: 8px; letter-spacing: 0; }
+  .user-app .play-section { grid-template-columns: 1fr 1fr; }
+  .user-app .play-section > div:first-child { grid-column: 1 / -1; grid-row: auto; }
+  .user-app .play-section > div:first-child p:last-child { max-width: 480px; }
+  .user-app .adapt-button { grid-column: 1; }
+  .user-app .integration-notice { grid-column: 2; }
+}
+@media (max-width: 760px) {
+  .user-app { padding-inline: 22px; }
+  .user-app .user-nav { height: 77px; }
+  .user-app .nav-manifesto { display: none; }
+  .user-app .session-intro { display: block; padding-block: 30px; }
+  .user-app .session-intro h1 { font-size: clamp(35px, 6.3vw, 48px); }
+  .user-app .intro-description { max-width: 490px; margin: 20px 0 0; font-size: 12px; }
+  .user-app .intro-description br { display: none; }
+  .user-app .desk-readout { padding: 26px 22px; }
+  .user-app .desk-readout h2 { font-size: 27px; }
+  .user-app .record-caption { flex-direction: column; align-items: start; gap: 6px; }
+  .user-app .record-footnote > span:first-child { max-width: 125px; }
+  .user-app .session-guide { padding-block: 24px; }
+  .user-app .session-guide li { gap: 10px; padding-inline: 13px; }
+  .user-app .session-guide strong { font-size: 12px; }
+  .user-app .session-guide p { font-size: 10px; line-height: 1.6; }
+  .user-app .vinyl-label strong { font-size: 18px; }
+  .user-app .label-top { font-size: 4px; }
+  .user-app .label-bottom { font-size: 5px; }
+  .user-app .session-intro.has-result { min-height: 0; }
+  .user-app .back-button { margin-top: 18px; }
+  .user-app .chord-readout h2 { font-size: 43px; }
+  .user-app .song-stats { gap: 14px; }
+  .user-app .song-stats dd { font-size: 16px; }
+}
+@media (max-width: 560px) {
+  .user-app { padding-inline: 18px; }
+  .user-app .user-nav { height: 70px; gap: 15px; }
+  .user-app .brand { font-size: 28px; }
+  .user-app .brand-mark { width: 29px; }
+  .user-app .dev-link { font-size: 9px; gap: 3px; }
+  .user-app .dev-link svg { width: 12px; }
+  .user-app .session-intro { padding: 27px 0 24px; }
+  .user-app .eyebrow { font-size: 9px; margin-bottom: 13px; }
+  .user-app .session-intro h1 { font-size: clamp(30px, 7.7vw, 43px); }
+  .user-app .intro-description { font-size: 12px; line-height: 1.65; margin-top: 17px; }
+  .user-app .listening-desk { grid-template-columns: 1fr; }
+  .user-app .desk-bar { min-height: 39px; padding: 9px 14px; gap: 8px; }
+  .user-app .desk-title, .user-app .session-status { font-size: 8px; }
+  .user-app .record-side { border: 0; border-bottom: 1px solid #babbac; padding: 14px 17px 10px; }
+  .user-app .record-caption { flex-direction: row; font-size: 7px; }
+  .user-app .turntable-stage { width: min(100%, 350px); aspect-ratio: 1.62; margin-block: 8px 0; }
+  .user-app .platter-rim { width: 61%; left: 9%; top: 0; }
+  .user-app .tonearm { right: 8%; top: 0; height: 81%; width: 25%; }
+  .user-app .tonearm-pivot { border-width: 6px; }
+  .user-app .tonearm-bar { width: 6px; }
+  .user-app .deck-controls { right: 5%; bottom: 4%; }
+  .user-app .record-footnote { font-size: 10px; }
+  .user-app .record-footnote > span:first-child { max-width: none; }
+  .user-app .record-signature { font-size: 23px; }
+  .user-app .vinyl-label strong { font-size: 18px; }
+  .user-app .label-top { font-size: 3.5px; }
+  .user-app .label-bottom { font-size: 4px; }
+  .user-app .desk-readout { padding: 23px 20px; }
+  .user-app .desk-readout h2 { font-size: 28px; }
+  .user-app .input-description { margin: 12px 0 18px; font-size: 12px; }
+  .user-app .input-actions { display: grid; grid-template-columns: 1.2fr 1fr; gap: 8px; }
+  .user-app .primary-action, .user-app .secondary-action { padding: 12px 10px; gap: 7px; min-height: 48px; font-size: 11px; }
+  .user-app .primary-action svg:last-child { display: none; }
+  .user-app .primary-action span { flex: none; }
+  .user-app .input-actions .recording { grid-column: 1 / -1; }
+  .user-app .formats { font-size: 10px; margin-top: 12px; }
+  .user-app .formats span { font-size: 8px; }
+  .user-app .session-guide { display: flex; flex-direction: column; gap: 0; padding: 18px 0 22px; }
+  .user-app .session-guide li, .user-app .session-guide li:first-child { padding: 10px 0; border: 0; gap: 14px; }
+  .user-app .session-guide li > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 9px; }
+  .user-app .session-guide p { margin: 0; }
+  .user-app .session-guide strong { font-size: 11px; }
+  .user-app .user-footer { padding-block: 18px; }
+  .user-app .user-footer > span:first-child { font-size: 8px; max-width: 175px; }
+  .user-app .user-footer > span:last-child { font-size: 12px; text-align: right; }
+  .user-app .footer-arc { display: none; }
+  .user-app .chord-readout { padding: 0 0 20px; }
+  .user-app .chord-readout h2 { font-size: 52px; }
+  .user-app .song-stats { flex-wrap: nowrap; }
+  .user-app .song-stats dd { font-size: 17px; }
+  .user-app .state-success { grid-template-columns: 44% 56%; background: #eeeee3; }
+  .user-app .state-success .record-side { grid-column: 1; grid-row: 2 / 4; padding: 10px 6px; border: 0; background: #eeeee3; justify-content: center; }
+  .user-app .state-success .record-caption, .user-app .state-success .record-footnote, .user-app .state-success .deck-controls { display: none; }
+  .user-app .state-success .turntable-stage { width: 100%; aspect-ratio: 1.05; margin: 0; }
+  .user-app .state-success .platter-rim { width: 77%; left: 2%; top: 14%; }
+  .user-app .state-success .tonearm { width: 28%; right: 1%; top: 12%; height: 72%; }
+  .user-app .state-success .tonearm-pivot { border-width: 3px; }
+  .user-app .state-success .tonearm-bar { width: 4px; border-left-width: 1px; }
+  .user-app .state-success .vinyl-label strong { font-size: 10px; }
+  .user-app .state-success .label-top, .user-app .state-success .label-bottom { display: none; }
+  .user-app .state-success .spindle { width: 4px; }
+  .user-app .state-success .desk-readout, .user-app .state-success .result-panel { display: contents; }
+  .user-app .state-success .result-panel > .eyebrow { grid-column: 2; margin: 22px 12px 12px 4px; font-size: 8px; gap: 8px; }
+  .user-app .state-success .chord-readout { grid-column: 2; margin: 0 12px 22px 4px; padding: 0; }
+  .user-app .state-success .chord-readout h2 { font-size: clamp(34px, 10vw, 46px); }
+  .user-app .state-success .chord-readout p, .user-app .state-success .readout-label { font-size: 8px; }
+  .user-app .state-success .song-stats { grid-column: 1 / -1; padding: 18px 20px 0; }
+  .user-app .state-success .readout-hint { grid-column: 1 / -1; margin: 16px 20px 20px; }
+  .user-app .section-heading { align-items: end; flex-direction: row; gap: 10px; }
+  .user-app .section-heading h2, .user-app .play-section h2 { font-size: 27px; }
+  .user-app .section-heading > p { font-size: 8px; }
+  .user-app .section-heading > p span { margin-left: 2px; }
+  .user-app .chord-segment { min-width: 110px; min-height: 143px; }
+  .user-app .chord-detail { align-items: start; gap: 10px; }
+  .user-app .play-section { grid-template-columns: 1fr; gap: 22px; }
+  .user-app .play-section > div:first-child, .user-app .adapt-button, .user-app .integration-notice { grid-column: 1; }
+  .user-app .segmented button { min-height: 46px; }
+  .user-app .drop-overlay strong { font-size: 34px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .user-app *, .user-app *::before, .user-app *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .user-app .analysis-meter span { width: 100%; opacity: .55; }
+}
