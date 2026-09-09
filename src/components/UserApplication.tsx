@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
-import { ArrowLeft, FileAudio, Mic, Music2, Square, Upload } from "lucide-react";
+import { ArrowLeft, Mic, Music2, Square, Upload } from "lucide-react";
 import type { ChordAnalysisResponse } from "../types";
 import { ChordTimeline } from "./ChordTimeline";
 import { PlayItYourself, type Instrument } from "./PlayItYourself";
+import { Turntable } from "./Turntable";
 
 interface Props {
   result: ChordAnalysisResponse | null;
@@ -10,11 +11,12 @@ interface Props {
   error: string | null;
   analyze: (file: File) => Promise<void>;
   reset: () => void;
+  sourceFile?: File | null;
 }
 
 const formatDuration = (seconds: number) => `${Math.floor(seconds / 60)}:${Math.floor(seconds % 60).toString().padStart(2, "0")}`;
 
-export function UserApplication({ result, isAnalyzing, error, analyze, reset }: Props) {
+export function UserApplication({ result, sourceFile, isAnalyzing, error, analyze, reset }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -73,16 +75,15 @@ export function UserApplication({ result, isAnalyzing, error, analyze, reset }: 
               <p className="formats">WAV, MP3, FLAC, M4A, AAC or OGG</p>
               {(error || recordError) && <div className="user-error" role="alert">{error || recordError}</div>}
             </div>
-            <div className="hero-art" aria-hidden="true"><div className="record"><div className="record-label"><Music2 size={28} /></div></div><div className="sound-lines">{[28,54,78,45,88,64,34,70,48,24].map((height, index) => <i style={{ height }} key={index} />)}</div></div>
+            <div className="hero-art"><Turntable state={error || recordError ? "error" : "idle"} /></div>
           </section>
         )}
 
         {isAnalyzing && (
           <section className="analysis-state" aria-live="polite">
-            <div className="analysis-disc"><Music2 size={28} /></div>
-            <div className="loading-wave" aria-hidden="true">{Array.from({ length: 17 }, (_, index) => <i key={index} style={{ animationDelay: `${index * 70}ms` }} />)}</div>
+            <Turntable state="loading" />
             <h1>Analyzing your song...</h1>
-            <p>Listening for harmony, rhythm, and chord changes.</p>
+            <p>{sourceFile?.name ? <>Listening closely to <strong>{sourceFile.name}</strong>.</> : "Listening for harmony, rhythm, and chord changes."}</p>
           </section>
         )}
 
@@ -90,7 +91,7 @@ export function UserApplication({ result, isAnalyzing, error, analyze, reset }: 
           <div className="results-page">
             <button className="back-button" onClick={() => { setSelectedChord(null); reset(); }}><ArrowLeft size={17} /> Analyze another song</button>
             <section className="result-header">
-              <div className="file-icon"><FileAudio /></div>
+              <div className="result-turntable"><Turntable state="success" compact /></div>
               <div><p className="eyebrow">Your song map</p><h1>{result.filename}</h1></div>
               <dl className="song-stats">
                 <div><dt>Key</dt><dd>{result.analysis.key}</dd></div>

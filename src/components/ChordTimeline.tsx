@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { ChordSegment } from "../types";
 
 const formatTime = (seconds: number) => {
@@ -16,6 +17,13 @@ interface Props {
 export function ChordTimeline({ chords, duration, selectedIndex, onSelect }: Props) {
   return (
     <div className="timeline-wrap">
+      <div className="chord-arrivals" aria-hidden="true">
+        {chords.slice(0, 8).map((segment, index) => (
+          <span style={{ "--arrival-index": index } as CSSProperties} key={`${segment.start}-${segment.chord}-${index}`}>
+            {segment.chord}
+          </span>
+        ))}
+      </div>
       <div className="timeline" aria-label="Chronological chord progression">
         {chords.map((segment, index) => {
           const width = duration > 0 ? Math.max(((segment.end - segment.start) / duration) * 100, 6) : 10;
@@ -23,7 +31,7 @@ export function ChordTimeline({ chords, duration, selectedIndex, onSelect }: Pro
             <button
               type="button"
               className={`chord-segment ${selectedIndex === index ? "is-selected" : ""}`}
-              style={{ flexBasis: `${width}%` }}
+              style={{ flexBasis: `${width}%`, "--chord-index": index } as CSSProperties}
               onClick={() => onSelect(index)}
               key={`${segment.start}-${segment.chord}-${index}`}
               aria-pressed={selectedIndex === index}
