@@ -167,3 +167,56 @@ npm install
 npm run dev
 ```
 Navigate to `http://localhost:3000` to start classifying sound profiles.
+
+## Chord detection
+
+The Studio Control Desk sends dropped or selected audio to the existing Flask
+backend at `POST /api/analyze-chords`. The endpoint accepts multipart form data
+under `file`, or JSON containing `audioData`, `mimeType`, and optionally
+`filename`. A successful response contains the detected key, optional BPM,
+duration, and chronological chord regions:
+
+```json
+{
+  "filename": "progression.wav",
+  "mime_type": "audio/wav",
+  "analysis": {
+    "key": "C Major",
+    "key_confidence": 0.42,
+    "bpm": 120.0,
+    "bpm_confidence": 0.61,
+    "duration": 8.0,
+    "chords": [
+      {"chord": "C Major", "start": 0.0, "end": 2.0, "confidence": 0.73}
+    ],
+    "method": "harmonic-cqt-template-v1"
+  }
+}
+```
+
+Install and run both processes locally:
+
+```bash
+python -m pip install -r backend/requirements.txt
+python backend/app.py
+# In another terminal:
+npm install
+npm run dev
+```
+
+Test an audio file directly (the frontend dev server proxies `/api` to Flask):
+
+```bash
+curl -F "file=@/absolute/path/to/audio.wav" http://localhost:5000/api/analyze-chords
+python -m pytest backend/tests
+```
+
+`librosa` supplies harmonic/percussive separation, constant-Q chroma, onset,
+and beat features; `soundfile` provides reliable WAV/FLAC decoding. Compressed
+formats may additionally require the system FFmpeg decoder. The current
+detector recognizes major and minor triads plus `N` (no reliable chord). It
+does not yet distinguish inversions, seventh/extended chords, or slash chords.
+Dense arrangements, tuning drift, fast changes, and half/double-tempo ambiguity
+can reduce accuracy. Unreliable tempo is returned as `null`, and invalid,
+silent, or harmonically inconclusive audio returns an error rather than a
+fabricated progression.

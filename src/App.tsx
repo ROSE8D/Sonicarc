@@ -160,13 +160,31 @@ const PIANO_KEYS_LAYOUT = [
 ];
 
 // --- STATIC DEMO TRACK PRESETS ---
+interface ChordSegment {
+  chord: string;
+  start: number;
+  end: number;
+  confidence: number;
+}
+
+interface ChordAnalysisResponse {
+  analysis: {
+    key: string;
+    bpm: number | null;
+    duration: number;
+    chords: ChordSegment[];
+  };
+  filename: string;
+}
+
 interface TrackPreset {
   id: string;
   title: string;
   artist: string;
-  bpm: number;
+  bpm: number | null;
   key: string;
   chords: string[];
+  chordSegments?: ChordSegment[];
   duration: number; // in seconds
 }
 
@@ -248,6 +266,7 @@ export default function App() {
       setIsBeatActive(false);
       return;
     }
+    if (!activeTrack.bpm) return;
     const msPerBeat = (60 / activeTrack.bpm) * 1000;
     const interval = setInterval(() => {
       setIsBeatActive(true);
@@ -318,27 +337,43 @@ export default function App() {
     return () => cancelAnimationFrame(frameId);
   }, [isPlaying]);
 
-  // Calculate current chord based on timeline progress and grid BPM signatures
+  // Use detected time ranges for analyzed files; presets retain their beat-grid demo timing.
   const getTimelineChordState = () => {
-    const secondsPerMeasure = (60 / activeTrack.bpm) * 4; // 4/4 signature logic
+    if (activeTrack.chordSegments?.length) {
+      const matchedIndex = activeTrack.chordSegments.findIndex(
+        segment => trackProgress >= segment.start && trackProgress < segment.end
+      );
+      const currentIdx = matchedIndex >= 0 ? matchedIndex : activeTrack.chordSegments.length - 1;
+      const labels = activeTrack.chordSegments.map(segment => segment.chord);
+      return {
+        current: labels[currentIdx] || "N",
+        prev: labels[Math.max(0, currentIdx - 1)] || "N",
+        next: labels[Math.min(labels.length - 1, currentIdx + 1)] || "N",
+        upcoming: labels[Math.min(labels.length - 1, currentIdx + 2)] || "N"
+      };
+    }
+    const secondsPerMeasure = (60 / (activeTrack.bpm || 120)) * 4;
     const measureIndex = Math.floor(trackProgress / secondsPerMeasure);
     const chordsList = activeTrack.chords;
     const currentIdx = measureIndex % chordsList.length;
-    
-    const prevIdx = (currentIdx - 1 + chordsList.length) % chordsList.length;
-    const nextIdx = (currentIdx + 1) % chordsList.length;
-    const upcomingIdx = (currentIdx + 2) % chordsList.length;
-
     return {
       current: chordsList[currentIdx],
-      prev: chordsList[prevIdx],
-      next: chordsList[nextIdx],
-      upcoming: chordsList[upcomingIdx]
+      prev: chordsList[(currentIdx - 1 + chordsList.length) % chordsList.length],
+      next: chordsList[(currentIdx + 1) % chordsList.length],
+      upcoming: chordsList[(currentIdx + 2) % chordsList.length]
     };
   };
 
   const chordTape = getTimelineChordState();
-  const currentChordSpec = CHORD_LIBRARY[chordTape.current] || CHORD_LIBRARY["C Major"];
+  const createChordSpec = (label: string) => {
+    const [root, quality] = label.split(" ");
+    const rootIndex = NOTE_NAMES.indexOf(root);
+    if (rootIndex < 0) return { name: label, notesInfo: "No reliable chord", piano: [], guitar: [] };
+    const intervals = quality === "Minor" ? [0, 3, 7] : [0, 4, 7];
+    const piano = intervals.map(interval => NOTE_NAMES[(rootIndex + interval) % 12]);
+    return { name: label, notesInfo: piano.join(" - "), piano, guitar: [] as FingerPosition[] };
+  };
+  const currentChordSpec = CHORD_LIBRARY[chordTape.current] || createChordSpec(chordTape.current);
 
   // Handle Drag & Drop Events for file uploads
   const handleDragOver = (e: React.DragEvent) => {
@@ -350,63 +385,55 @@ export default function App() {
     setIsDragging(false);
   };
 
-  const executeDemucsDeconstruction = (fileName: string) => {
+  const executeDemucsDeconstruction = async (file: File) => {
     setIsAnalyzing(true);
-    setAnalysisProgress(5);
+    setAnalysisProgress(15);
+    setAnalysisLog(`[upload] Sending "${file.name}" to the harmonic analysis engine...`);
     setIsPlaying(false);
-    
-    const logs = [
-      `[0.2s] INITIALIZING SOUND BUFFER FOR FILE: "${fileName}"`,
-      `[0.8s] DECODING AUDIO FRAME OBJECTS TO FLOAT32 CHANNEL DATA STREAMS...`,
-      `[1.5s] SPINNING UP CUDA NVIDIA ENVIRONMENT ON DEMUCS V4 HYBRID TRANSFORMER COMPUTE CONTAINER...`,
-      `[2.2s] EXECUTING INSTRUMENTATION CORRELATING MASKS ON BASS, VOCALS, HARMONICS, AND DRUMS...`,
-      `[3.1s] EXTRACTING 12-TONE CHROMOGRAM CHROMA COEFFS FOR CHORD RECOGNITION...`,
-      `[3.8s] WRITING VECTOR TIMESTAMP BOUNDS INTO LOCAL TEMP DB CACHE METRICS INDEX...`,
-      `[4.3s] ANALYSIS FINISHED! RETURNING MIXING DESK WORKSPACE CONTROLS.`
-    ];
 
-    let step = 0;
-    const timer = setInterval(() => {
-      step++;
-      setAnalysisProgress(Math.min(100, Math.floor(step * 14.5)));
-      setAnalysisLog(logs[Math.min(logs.length - 1, step - 1)]);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      setAnalysisProgress(35);
+      const response = await fetch("/api/analyze-chords", { method: "POST", body });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Chord analysis failed.");
 
-      if (step >= 7) {
-        clearInterval(timer);
-        setTimeout(() => {
-          setIsAnalyzing(false);
-          // Set a newly separated custom track
-          const customTrack: TrackPreset = {
-            id: `custom-${Date.now()}`,
-            title: fileName.length > 32 ? fileName.substring(0, 30) + "..." : fileName,
-            artist: "Custom Upload Session",
-            bpm: 118,
-            key: "E Minor",
-            chords: ["E Minor", "C Major", "G Major", "D Major"],
-            duration: 135
-          };
-          setActiveTrack(customTrack);
-          setTrackProgress(0);
-          setIsPlaying(true);
-        }, 600);
-      }
-    }, 700);
+      const result = (payload as ChordAnalysisResponse).analysis;
+      const detected = result.chords.filter(segment => segment.chord !== "N");
+      if (!detected.length) throw new Error("No reliable chords were detected.");
+      setAnalysisProgress(100);
+      setAnalysisLog(`[complete] Detected ${detected.length} timed chord regions in ${result.key}.`);
+      setActiveTrack({
+        id: `custom-${Date.now()}`,
+        title: file.name.length > 32 ? `${file.name.substring(0, 30)}...` : file.name,
+        artist: "Analyzed Upload",
+        bpm: result.bpm,
+        key: result.key,
+        chords: detected.map(segment => segment.chord),
+        chordSegments: result.chords,
+        duration: result.duration
+      });
+      setTrackProgress(0);
+    } catch (error) {
+      setAnalysisProgress(0);
+      setAnalysisLog(`[error] ${error instanceof Error ? error.message : "Chord analysis failed."}`);
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      executeDemucsDeconstruction(file.name);
-    }
+    const file = e.dataTransfer.files?.[0];
+    if (file) void executeDemucsDeconstruction(file);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      executeDemucsDeconstruction(file.name);
-    }
+    const file = e.target.files?.[0];
+    if (file) void executeDemucsDeconstruction(file);
+    e.target.value = "";
   };
 
   // Mixer control actions
@@ -595,16 +622,17 @@ export default function App() {
                       </div>
                     </div>
                   ) : (
-                    <div
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                      className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center transition-all ${
-                        isDragging
-                          ? "border-cyan-400 bg-cyan-950/20"
-                          : "border-gray-800 bg-[#07080A]/80 hover:border-cyan-400/40"
-                      }`}
-                    >
+                    <div>
+                      <div
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center transition-all ${
+                          isDragging
+                            ? "border-cyan-400 bg-cyan-950/20"
+                            : "border-gray-800 bg-[#07080A]/80 hover:border-cyan-400/40"
+                        }`}
+                      >
                       <input
                         type="file"
                         id="audio-file-input"
@@ -623,6 +651,10 @@ export default function App() {
                           AAC, WAV, MP3, FLAC files processed locally (Up to 15MB)
                         </span>
                       </label>
+                      </div>
+                      {analysisLog.startsWith("[error]") && (
+                        <p className="mt-3 text-[10px] font-mono text-red-400" role="alert">{analysisLog}</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -654,7 +686,7 @@ export default function App() {
                           </div>
                         </div>
                         <div className="text-right flex items-center gap-1.5">
-                          <span className="text-[10px] font-mono text-cyan-400 font-bold">{track.bpm} BPM</span>
+                          <span className="text-[10px] font-mono text-cyan-400 font-bold">{track.bpm ? `${track.bpm} BPM` : "BPM unavailable"}</span>
                           <span className="text-[9px] font-mono bg-[#161B22] border border-gray-800 px-2 py-0.5 rounded text-gray-400 uppercase">
                             {track.key}
                           </span>
@@ -691,7 +723,7 @@ export default function App() {
                     </div>
                     <div className="text-right font-mono">
                       <span className="text-xs text-gray-400 block font-bold uppercase">BPM Sync</span>
-                      <span className="text-xs text-emerald-400 block font-semibold">{activeTrack.bpm} // {activeTrack.key}</span>
+                      <span className="text-xs text-emerald-400 block font-semibold">{activeTrack.bpm ? `${activeTrack.bpm} BPM` : "BPM unavailable"} // {activeTrack.key}</span>
                     </div>
                   </div>
 

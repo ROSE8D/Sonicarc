@@ -1,0 +1,1 @@
+"""SonicArc Flask backend package."""
