@@ -9,9 +9,16 @@ from google.genai import types
 from pymongo import MongoClient
 from bson import ObjectId
 
+try:
+    from .chord_analysis import ChordAnalysisError, ChordAnalyzer
+except ImportError:
+    from chord_analysis import ChordAnalysisError, ChordAnalyzer
+
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024
 # Enable CORS for frontend integration
 CORS(app)
+chord_analyzer = ChordAnalyzer()
 
 # 1. MongoDB Setup
 # Retrieve Mongo URI from environment variable (default fallback to local)
@@ -53,6 +60,41 @@ def health():
         "mongodb_connected": mongo_available,
         "gemini_api_configured": os.getenv("GEMINI_API_KEY") is not None
     })
+
+
+@app.route("/api/analyze-chords", methods=["POST"])
+def analyze_chords():
+    """Analyze uploaded or base64-encoded audio without a synthetic fallback."""
+    try:
+        audio_content = None
+        mime_type = "audio/wav"
+        filename = "recording.wav"
+        if "file" in request.files:
+            uploaded = request.files["file"]
+            audio_content = uploaded.read()
+            mime_type = uploaded.content_type or mime_type
+            filename = uploaded.filename or filename
+        elif request.is_json:
+            data = request.get_json(silent=True) or {}
+            encoded = data.get("audio_data") or data.get("audioData")
+            mime_type = data.get("mime_type") or data.get("mimeType") or mime_type
+            filename = data.get("filename") or filename
+            if encoded:
+                encoded = encoded.split(",", 1)[-1]
+                try:
+                    audio_content = base64.b64decode(encoded, validate=True)
+                except (ValueError, TypeError) as exc:
+                    raise ChordAnalysisError("audioData is not valid base64 audio.") from exc
+        if not audio_content:
+            return jsonify({"error": "An audio file is required."}), 400
+
+        result = chord_analyzer.analyze_bytes(audio_content, suffix=os.path.splitext(filename)[1])
+        return jsonify({"analysis": result, "filename": filename, "mime_type": mime_type}), 200
+    except ChordAnalysisError as exc:
+        return jsonify({"error": str(exc)}), 422
+    except Exception as exc:
+        app.logger.exception("Chord analysis failed")
+        return jsonify({"error": "Chord analysis failed unexpectedly.", "details": str(exc)}), 500
 
 @app.route("/api/analyze-instrument", methods=["POST"])
 def analyze_instrument():
