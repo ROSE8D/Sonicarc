@@ -73,6 +73,8 @@ def test_chord_endpoint_accepts_multipart_audio():
     assert payload["filename"] == "progression.wav"
     assert payload["analysis"]["method"] == "harmonic-cqt-template-v1"
     assert payload["analysis"]["chords"]
+    assert "notes" in payload["analysis"]
+    assert payload["analysis"]["note_method"] == "pyin-dominant-pitch-v1"
 
 
 def test_chord_endpoint_decodes_browser_webm_opus(caplog):

@@ -10,6 +10,15 @@ export interface ChordSegment {
   confidence: number;
 }
 
+export interface NoteEvent {
+  note: string;
+  midi: number;
+  frequency: number;
+  start: number;
+  end: number;
+  confidence: number;
+}
+
 export interface ChordAnalysis {
   key: string;
   key_confidence?: number;
@@ -17,7 +26,9 @@ export interface ChordAnalysis {
   bpm_confidence?: number | null;
   duration: number;
   chords: ChordSegment[];
+  notes: NoteEvent[];
   method?: string;
+  note_method?: string;
 }
 
 export interface ChordAnalysisResponse {

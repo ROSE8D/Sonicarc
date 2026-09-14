@@ -168,13 +168,14 @@ npm run dev
 ```
 Navigate to `http://localhost:3000` to start classifying sound profiles.
 
-## Chord detection
+## Chord and melody-note detection
 
 The Studio Control Desk sends dropped or selected audio to the existing Flask
 backend at `POST /api/analyze-chords`. The endpoint accepts multipart form data
 under `file`, or JSON containing `audioData`, `mimeType`, and optionally
 `filename`. A successful response contains the detected key, optional BPM,
-duration, and chronological chord regions:
+duration, chronological chord regions, and a separate sequence of dominant-pitch
+note events:
 
 ```json
 {
@@ -189,7 +190,11 @@ duration, and chronological chord regions:
     "chords": [
       {"chord": "C Major", "start": 0.0, "end": 2.0, "confidence": 0.73}
     ],
-    "method": "harmonic-cqt-template-v1"
+    "notes": [
+      {"note": "E4", "midi": 64, "frequency": 329.63, "start": 0.42, "end": 0.78, "confidence": 0.88}
+    ],
+    "method": "harmonic-cqt-template-v1",
+    "note_method": "pyin-dominant-pitch-v1"
   }
 }
 ```
@@ -212,7 +217,8 @@ python -m pytest backend/tests
 ```
 
 `librosa` supplies harmonic/percussive separation, constant-Q chroma, onset,
-and beat features; `soundfile` provides reliable WAV/FLAC decoding. Browser
+beat features, and deterministic pYIN fundamental-frequency estimation;
+`soundfile` provides reliable WAV/FLAC decoding. Browser
 recordings (WebM/Opus in Chrome and Edge, MP4/AAC in Safari, or OGG/Opus where
 available) and uploaded compressed files are normalized to mono PCM WAV before
 analysis. The pinned `imageio-ffmpeg` Python dependency supplies the FFmpeg
@@ -223,6 +229,16 @@ Dense arrangements, tuning drift, fast changes, and half/double-tempo ambiguity
 can reduce accuracy. Unreliable tempo is returned as `null`, and invalid,
 silent, or harmonically inconclusive audio returns an error rather than a
 fabricated progression.
+
+The note tracker is a separate stage and does not replace or feed the chord
+classifier. It median-smooths pYIN frames, rejects unvoiced, low-energy,
+low-probability, spectrally noisy, and poorly tuned frames, bridges only a
+single-frame dropout between matching notes, and merges equal adjacent pitches
+into events of at least 90 ms. It is intended for monophonic melody or the
+dominant pitch in a mix. Dense polyphony, quiet melody beneath accompaniment,
+very low/high notes outside C2–C7, strong inharmonicity, and overlapping voices
+can reduce note accuracy. No audio or pitch data is sent to Gemini for this
+analysis; note detection is entirely local signal processing.
 
 ## AI chord adaptation
 

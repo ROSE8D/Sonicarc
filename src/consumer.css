@@ -147,6 +147,14 @@
 .user-app .readout-hint { color: var(--muted); font-size: 11px; margin: 23px 0 0; }
 .user-app .results-page { max-width: none; margin: 0; padding: 0 0 40px; }
 .user-app .progression-section { padding: 35px 0 30px; border: 0; border-bottom: 1px solid var(--rule); }
+.user-app .melody-section { padding: 31px 0 34px; border-bottom: 1px solid var(--rule); }
+.user-app .note-timeline { position: relative; min-width: 100%; min-height: 105px; overflow-x: auto; border-top: 1px solid #babbac; border-bottom: 1px solid #babbac; background: repeating-linear-gradient(to right, transparent 0, transparent calc(10% - 1px), #dddccd calc(10% - 1px), #dddccd 10%); }
+.user-app .note-event { position: absolute; left: var(--note-left); top: 13px; width: max(var(--note-width), 72px); min-height: 78px; padding: 9px 10px; border-top: 2px solid var(--accent); background: #e4e5d6; white-space: nowrap; overflow: hidden; }
+.user-app .note-event:nth-child(even) { top: 18px; background: #dcdfcf; }
+.user-app .note-event strong { display: block; font: 400 23px 'Instrument Serif', Georgia, serif; }
+.user-app .note-event span, .user-app .note-event small { display: block; margin-top: 5px; color: var(--muted); font: 8px var(--mono); }
+.user-app .note-event small { color: var(--accent); }
+.user-app .notes-empty { margin: 0; padding: 25px; border: 1px solid #c7c9b9; color: var(--muted); font-size: 12px; }
 .user-app .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
 .user-app .section-heading .eyebrow { margin-bottom: 8px; }
 .user-app .section-heading h2, .user-app .play-section h2 { font: 500 30px 'SonicArc Sans', sans-serif; letter-spacing: -.045em; margin: 0; }
