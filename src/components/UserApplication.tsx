@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowUpRight, Mic, Square, Upload } from "lucide-react";
 import type { ChordAnalysisResponse } from "../types";
 import { ChordTimeline } from "./ChordTimeline";
+import { NoteTimeline } from "./NoteTimeline";
 import { PlayItYourself, type Instrument } from "./PlayItYourself";
 import { Turntable } from "./Turntable";
 import "../consumer.css";
@@ -197,6 +198,10 @@ export function UserApplication({ result, sourceFile, isAnalyzing, error, analyz
               <div className="section-heading"><div><p className="eyebrow">The chord progression</p><h2 id="progression-title">Follow the song.</h2></div><p>Start to finish <span aria-hidden="true">↗</span></p></div>
               <ChordTimeline chords={result.analysis.chords} duration={result.analysis.duration} selectedIndex={selectedChord} onSelect={setSelectedChord} />
               {activeChord && <div className="chord-detail"><strong>{activeChord.chord}</strong><p>{Math.round(activeChord.confidence * 100)}% confidence · {instrument} fingering guidance will appear here in a future update.</p></div>}
+            </section>
+            <section className="melody-section" aria-labelledby="melody-title">
+              <div className="section-heading"><div><p className="eyebrow">Melody / Notes</p><h2 id="melody-title">Hear every line.</h2></div><p>{result.analysis.notes.length} reliable note events <span aria-hidden="true">↗</span></p></div>
+              <NoteTimeline notes={result.analysis.notes} duration={result.analysis.duration} />
             </section>
             <PlayItYourself analysis={result.analysis} instrument={instrument} onInstrumentChange={setInstrument} />
           </div>

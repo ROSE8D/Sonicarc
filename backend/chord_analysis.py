@@ -19,6 +19,11 @@ import numpy as np
 import imageio_ffmpeg
 from scipy.ndimage import median_filter
 
+try:
+    from .pitch_analysis import PitchAnalyzer
+except ImportError:
+    from pitch_analysis import PitchAnalyzer
+
 
 NOTE_NAMES = ("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
 MAJOR_PROFILE = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
@@ -64,6 +69,7 @@ class ChordAnalyzer:
         self.sample_rate = sample_rate
         self.hop_length = hop_length
         self._templates, self._labels = self._build_templates()
+        self.pitch_analyzer = PitchAnalyzer(sample_rate=sample_rate)
 
     @staticmethod
     def _build_templates() -> tuple[np.ndarray, list[str]]:
@@ -145,6 +151,7 @@ class ChordAnalyzer:
 
         key, key_confidence = self._estimate_key(chroma)
         bpm, bpm_confidence = self._estimate_tempo(signal, sample_rate, duration)
+        notes = self.pitch_analyzer.analyze(signal, sample_rate)
         return {
             "key": key,
             "key_confidence": round(key_confidence, 3),
@@ -152,7 +159,9 @@ class ChordAnalyzer:
             "bpm_confidence": bpm_confidence,
             "duration": round(duration, 3),
             "chords": [asdict(segment) for segment in segments],
+            "notes": notes,
             "method": "harmonic-cqt-template-v1",
+            "note_method": "pyin-dominant-pitch-v1",
         }
 
     def _classify_frames(self, chroma: np.ndarray) -> tuple[list[str], np.ndarray]:
