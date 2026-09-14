@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: sonicarc
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FLASK_BACKEND_URL
+        fromService:
+          type: web
+          name: sonicarc-audio-backend
+          property: host
+      - fromGroup: sonicarc-secrets
+
+  - type: web
+    name: sonicarc-audio-backend
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120 backend.app:app
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - fromGroup: sonicarc-secrets
+
+envVarGroups:
+  - name: sonicarc-secrets
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
