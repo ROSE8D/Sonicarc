@@ -1,6 +1,6 @@
 import { Type } from "@google/genai";
 
-export const ADAPTATION_MODEL = "gemini-2.5-flash";
+export const ADAPTATION_MODEL = "gemini-3.6-flash";
 
 export type AdaptationInstrument = "guitar" | "piano";
 export type AdaptationSkill = "beginner" | "intermediate" | "advanced";
