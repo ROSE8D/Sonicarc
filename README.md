@@ -1,265 +1,603 @@
-# SonicArc 🎸🎹🎻💨
+# SonicArc 🎵
 
-SonicArc is a professional full-stack musical tool that analyzes raw acoustic wave signals in real-time to identify musical instruments using SOTA Artificial Intelligence, keeping a durable query log and transaction ledger in MongoDB.
+SonicArc is a MusicTech web application that analyzes audio and transforms detected musical information into a playable, personalized experience.
 
----
+A user can upload or record audio, analyze its harmony and melody, view detected chords and notes over time, and request an AI-powered chord adaptation based on instrument and skill level.
 
-## 🛠️ Technologies Used
-
-- **Frontend Core:** [React (Vite + TypeScript)](https://react.dev/) – Fast interactive user interfaces with beautiful, responsive Bento-grid views.
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/) – Custom typography, dark sleek palettes, and professional negative-space rhythm layouts.
-- **Iconography:** [Lucide React](https://lucide.dev/) – Beautiful, consistent interface indicators.
-- **Backend API:** [Python Flask](https://flask.palletsprojects.com/) – Lightweight controller implementing CORS headers, base64/multimodal file stream ingestion.
-- **Cloud AI Model:** [Google Gemini 2.5 Flash](https://ai.google.dev/gemini-api) – Powering sound-signature classification using the modern official `google-genai` SDK.
-- **Database Logs Storage:** [MongoDB Collection](https://www.mongodb.com/) – Using `pymongo` connectors to save prediction history documents containing acoustic properties, confidence ratios, and custom notes.
+The system combines deterministic digital signal processing with an LLM-based adaptation layer.
 
 ---
 
-## 🔌 API Endpoints Explanation
+## Core Features
 
-### 1. `POST /api/analyze-instrument`
-Analyzes an incoming audio stream or user-supplied description to determine the origin instrument.
+### Audio Analysis
 
-* **Payload Format:** JSON
-  ```json
-  {
-    "audioData": "base64_encoded_audio_bytes_data",
-    "mimeType": "audio/wav",
-    "description": "User custom notes about the timbre (optional)"
-  }
-  ```
-* **Response Schema:** Validated structured JSON
-  ```json
-  {
-    "_id": "mongo_inserted_record_hash_id",
-    "instrument": "Grand Piano",
-    "confidence": 0.95,
-    "explanation": "Spotted hammer struck strings producing pristine linear sustain with subtle damper release...",
-    "pitch_range": "Soprano / Bass",
-    "characteristics": ["Hammer strike transients", "Rich multi-string resonances"],
-    "description_prompt": "Optional audio description notes",
-    "mime_type": "audio/wav",
-    "timestamp": "2026-06-17T10:46:41.000Z",
-    "mongodb_logged": true,
-    "gemini_processed": true
-  }
-  ```
+SonicArc analyzes uploaded or recorded audio and extracts:
 
-### 2. `GET /api/analyses`
-Retrieves the logged execution history of analyzed instruments directly from the MongoDB collection.
-* **Response Format:** A JSON array of historical prediction documents sorted chronologically (latest first).
+- Chord progression
+- Chord timestamps
+- Chord confidence
+- Melody / dominant pitch notes
+- Note timestamps and duration
+- Note confidence
+- Musical key
+- BPM
+- Audio duration
+
+### Chord Detection
+
+Chord detection is performed using deterministic signal processing.
+
+The harmonic analysis uses chroma / CQT-based musical features to classify chord regions throughout the audio.
+
+The LLM is **not** responsible for detecting chords.
+
+### Melody / Note Detection
+
+SonicArc also performs deterministic dominant-pitch detection using `librosa` and the pYIN algorithm.
+
+The pitch-analysis pipeline:
+
+1. Estimates fundamental frequency over time.
+2. Rejects silence and low-energy regions.
+3. Filters low-confidence or unstable pitch estimates.
+4. Smooths pitch values.
+5. Quantizes frequencies into musical notes.
+6. Bridges isolated short gaps.
+7. Merges consecutive stable pitches.
+8. Produces structured note events.
+
+Each note event can contain:
+
+- Note name
+- MIDI number
+- Frequency
+- Start time
+- End time
+- Confidence
+
+The current pitch detector is designed primarily for dominant melodic lines. Dense polyphony, overlapping voices, or melody buried beneath accompaniment may reduce accuracy.
 
 ---
 
-## 📐 Architecture Diagrams
+## AI Chord Adaptation
 
-### 1. System Design Diagram (Mermaid)
+After the deterministic analysis is complete, the user can choose:
 
-The System Diagram details the topology of elements, database stores, machine learning components, and active communication paths:
+- Instrument: Guitar or Piano
+- Skill level: Beginner, Intermediate, or Advanced
 
-```mermaid
-graph TD
-    User([👤 Musician]) -->|Plays sound / records mic| WebApp["💻 SonicArc React Frontend (Port 3000)"]
-    User -->|Uploads STEM audio file| WebApp
-    
-    subgraph Client Application Environment
-        WebApp -->|Captures base64 audio data| API_Client[Fetch Dispatcher / API Hook]
-    end
+SonicArc then uses the Gemini API to adapt the detected chord progression into a more playable version for that user.
 
-    subgraph Server Infrastructure
-        API_Client -->|POST /api/analyze-instrument JSON| FlaskBackend["🐍 Python Flask Backend (Port 5000)"]
-        
-        subgraph Machine Learning Pipeline
-            FlaskBackend -->|Multimodal audio stream & dynamic prompt| GeminiAPI["✨ Google Gemini 2.5 Flash API"]
-            GeminiAPI -->|Structured JSON Response| FlaskBackend
-        end
+The AI adaptation receives structured musical information rather than raw audio.
 
-        subgraph Persistent Database
-            FlaskBackend -->|Insert Document: Predictions Log| MongoDB[(🍃 MongoDB Database)]
-        end
-    end
+The adaptation request contains information such as:
 
-    FlaskBackend -->|Result JSON Payload| API_Client
-    API_Client -->|Renders analysis metrics & confidence meter| WebApp
+- Detected chords
+- Detected key
+- BPM
+- Selected instrument
+- Selected skill level
+
+Gemini can return:
+
+- Original chord
+- Adapted chord
+- Reason for the adaptation
+- Optional transposition
+- Optional capo recommendation
+- Short adaptation summary
+
+The server validates the structured AI response before returning it to the frontend.
+
+If the AI response is invalid or unavailable, SonicArc keeps the original detected analysis unchanged rather than displaying simulated AI results.
+
+---
+
+## Why SonicArc Uses an LLM
+
+SonicArc intentionally separates tasks that require deterministic signal processing from tasks that benefit from contextual reasoning.
+
+Audio recognition is handled by signal-processing algorithms because chord and pitch detection depend on measurable acoustic features.
+
+The LLM is used for musical adaptation and personalization.
+
+This architecture allows the application to use real audio analysis while still benefiting from an LLM for decisions such as simplifying difficult chords, adapting a progression for a specific instrument, or making the result more appropriate for the user's skill level.
+
+---
+
+## Technology Stack
+
+### Frontend
+
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+
+### Application Server
+
+- Node.js
+- Express
+- TypeScript
+
+### Audio Analysis Backend
+
+- Python
+- Flask
+- librosa
+- NumPy
+
+### AI
+
+- Google Gemini API
+- Gemini 3.6 Flash
+
+---
+
+## Application Structure
+
+SonicArc contains two main interfaces.
+
+### Consumer Application
+
+Route:
+
+```text
+/
 ```
 
-#### Explanation of System Diagram:
-1. **Musician Ingest**: The user interacts with SonicArc by plucking notes, recording audio strings through the microphone, or uploading files.
-2. **React Client Ingestion & Encoding**: The frontend captures the media streams, encodes them to base64 waveforms, and packages them alongside user notes into structured API payloads.
-3. **Flask Server Processor**: The pythonic Flask service listens to digest streams. On requests, it initializes the `google-genai` client, uses the standard system configuration secrets, and constructs the dynamic prompt asking Gemini to process the signal.
-4. **Multimodal AI Solver**: The supported **Gemini 2.5 Flash** model reads the audio content directly, executing timbre sound-signature queries to decipher the instrument, harmonic attack profiles, and confidence ratios.
-5. **Durable MongoDB Ledger**: Analysis logs are saved as persistent BSON documents inside MongoDB so musicians can retrieve their historical transactions anytime.
+The consumer interface allows users to:
+
+- Upload or record audio
+- Run audio analysis
+- View detected chord progression
+- View melody / note events
+- Inspect timestamps and confidence
+- Choose an instrument
+- Choose a skill level
+- Request AI chord adaptation
+- View a personalized playable result
+
+### Developer Dashboard
+
+Route:
+
+```text
+/dev
+```
+
+The developer interface exposes additional analysis and diagnostic information useful during development and testing.
 
 ---
 
-### 2. Sequence Workflow Diagram (Mermaid)
+## Main API Flow
 
-The Sequence Diagram details the chronological order of execution calls:
+### Audio Analysis
+
+```text
+POST /api/analyze-chords
+```
+
+The audio-analysis endpoint accepts audio as multipart form data.
+
+It performs deterministic audio analysis and returns structured information including:
+
+- Chords
+- Notes
+- Key
+- BPM
+- Duration
+- Analysis method information
+
+### AI Adaptation
+
+The adaptation service receives the detected musical information together with the user's instrument and skill-level preferences.
+
+The server communicates with the Gemini API using the server-side `GEMINI_API_KEY`.
+
+The API key must never be exposed in frontend code or committed to the repository.
+
+---
+
+# System Design Diagrams
+
+## 1. System Architecture
+
+```mermaid
+flowchart LR
+U["User"]
+
+subgraph FE["React / TypeScript Frontend"]
+UI["Consumer Application"]
+DEV["Developer Dashboard"]
+TL["Chord & Note Timelines"]
+ADUI["Adaptation Controls"]
+end
+
+subgraph APP["Application Services"]
+NODE["Node / Express Server"]
+AD["AI Adaptation Service"]
+end
+
+subgraph AUDIO["Python / Flask Audio Backend"]
+API["Audio Analysis API"]
+CA["Chord Detection"]
+PA["Pitch / Note Detection"]
+end
+
+GEM["Gemini API"]
+
+U --> UI
+U --> DEV
+
+UI -->|"Upload / Record Audio"| NODE
+NODE -->|"/api/analyze-chords"| API
+
+API --> CA
+API --> PA
+
+CA -->|"Chord Regions"| API
+PA -->|"Note Events"| API
+
+API -->|"Chords + Notes + Key + BPM + Duration"| NODE
+NODE --> UI
+
+UI --> TL
+
+UI -->|"Instrument + Skill Level"| ADUI
+ADUI --> NODE
+NODE --> AD
+
+AD -->|"Chords + Key + BPM + Preferences"| GEM
+GEM -->|"Structured Adaptation"| AD
+
+AD --> NODE
+NODE --> UI
+```
+
+---
+
+## 2. Component Diagram
+
+```mermaid
+flowchart TB
+USER["User"]
+
+subgraph CLIENT["Frontend Components"]
+APP["User Application"]
+TT["Turntable"]
+CT["Chord Timeline"]
+NT["Note Timeline"]
+AC["Adaptation Controls"]
+DP["Developer Analysis Panel"]
+end
+
+subgraph SERVER["Server Layer"]
+NODE["Node / Express"]
+ANALYZE["Audio Analysis Request"]
+ADAPT["AI Adaptation Service"]
+end
+
+subgraph DSP["Deterministic Audio Processing"]
+FLASK["Python Flask Backend"]
+CHORD["Harmonic CQT Chord Classifier"]
+PITCH["librosa pYIN Pitch Detector"]
+FILTER["Pitch Filtering & Event Merging"]
+end
+
+subgraph LLM["LLM Layer"]
+GEMINI["Gemini API"]
+end
+
+USER --> APP
+APP --> TT
+
+APP --> NODE
+NODE --> ANALYZE
+ANALYZE --> FLASK
+
+FLASK --> CHORD
+FLASK --> PITCH
+PITCH --> FILTER
+
+CHORD --> FLASK
+FILTER --> FLASK
+
+FLASK --> ANALYZE
+ANALYZE --> NODE
+NODE --> APP
+
+APP --> CT
+APP --> NT
+
+USER --> AC
+AC --> NODE
+NODE --> ADAPT
+ADAPT --> GEMINI
+GEMINI --> ADAPT
+ADAPT --> NODE
+NODE --> APP
+
+FLASK --> DP
+```
+
+---
+
+## 3. Audio Analysis Flow
+
+```mermaid
+flowchart TD
+A["Audio Uploaded or Recorded"]
+B["Decode & Normalize Audio"]
+C["Audio Signal"]
+
+D["Harmonic CQT Analysis"]
+E["Chord Classification"]
+F["Chord Regions"]
+
+G["pYIN Pitch Estimation"]
+H["Energy / Voicing Filtering"]
+I["Confidence & Stability Filtering"]
+J["Median Pitch Smoothing"]
+K["Semitone Quantization"]
+L["Bridge Short Dropouts"]
+M["Merge Stable Consecutive Notes"]
+N["Note Events"]
+
+O["Key / BPM / Duration Analysis"]
+
+P["Structured Analysis Response"]
+Q["React Frontend"]
+R["Chord Timeline"]
+S["Melody / Notes Timeline"]
+
+A --> B
+B --> C
+
+C --> D
+D --> E
+E --> F
+
+C --> G
+G --> H
+H --> I
+I --> J
+J --> K
+K --> L
+L --> M
+M --> N
+
+C --> O
+
+F --> P
+N --> P
+O --> P
+
+P --> Q
+
+Q --> R
+Q --> S
+```
+
+---
+
+## 4. Audio Analysis Sequence Diagram
 
 ```mermaid
 sequenceDiagram
-    autonumber
-    actor Musician
-    participant Frontend as React Web App
-    participant Backend as Flask API Server
-    participant Gemini as Google Gemini AI
-    participant DB as MongoDB
+actor User
+participant UI as React Frontend
+participant Node as Node / Express
+participant Flask as Flask Backend
+participant Chord as Chord Analyzer
+participant Pitch as Pitch Analyzer
 
-    Musician->>Frontend: Records mic audio or selects track file
-    Musician->>Frontend: Clicks "Analyze Sound Signature"
-    Frontend->>Frontend: Converts audio blob to base64 stream
-    Frontend->>Backend: POST /api/analyze-instrument (audio, descriptor)
-    
-    activate Backend
-    Backend->>Backend: Read GEMINI_API_KEY from environment
-    Backend->>Gemini: generate_content(audio_part, dynamic_classification_prompt)
-    
-    activate Gemini
-    Gemini->>Gemini: Evaluate timbral resonance & harmonic attack profiles
-    Gemini-->>Backend: Return JSON (instrument, confidence, explanation)
-    deactivate Gemini
-    
-    Backend->>DB: insert_one(analysis_record_document)
-    activate DB
-    DB-->>Backend: Acknowledge INSERT (_id, timestamp)
-    deactivate DB
-    
-    Backend-->>Frontend: Return full analysis JSON with mongo DB receipt
-    deactivate Backend
-    
-    Frontend->>Frontend: Update UI: Render confidence dial, pitch indicators, and warnings
-    Frontend->>Frontend: Reload history lists from database
-    Frontend-->>Musician: Display detailed sound classification!
+User->>UI: Upload or record audio
+UI->>Node: Submit audio
+Node->>Flask: POST /api/analyze-chords
+
+Flask->>Chord: Analyze harmonic content
+Chord-->>Flask: Chord regions
+
+Flask->>Pitch: Run pYIN pitch analysis
+Pitch->>Pitch: Filter and smooth estimates
+Pitch->>Pitch: Quantize and merge note events
+Pitch-->>Flask: Structured note events
+
+Flask->>Flask: Assemble analysis result
+Flask-->>Node: Chords + Notes + Key + BPM + Duration
+
+Node-->>UI: Structured analysis
+UI->>UI: Render chord timeline
+UI->>UI: Render melody / notes timeline
+UI-->>User: Display analysis
 ```
-
-#### Explanation of Sequence Diagram:
-1. The musician initiates the action flow on the React UI by recording audio.
-2. The user executes the analysis button which converts waves into active strings.
-3. An HTTP POST request containing base64 audio hits `/api/analyze-instrument` on the backend.
-4. The backend initializes Gemini safely, constructing a prompt mapping harmonic spectral peaks and requesting valid double-quoted JSON.
-5. SOTA Gemini API processes multi-sensory audio signals, formulating the response containing instrument categories and explanations.
-6. The compiled results are saved with accurate UTC timestamps as structured history documents inside the MongoDB cluster.
-7. Under exact schemas, the Flask controller answers the client with high-fidelity output.
-8. The React client animates meters, displays explanations, and syncs history.
 
 ---
 
-## 🔑 How to Run the Project
+## 5. LLM Chord Adaptation Sequence Diagram
 
-### 1. Configure Secrets & Environments
-Define variables in your `.env` configuration file:
-```env
-GEMINI_API_KEY="AI_STUDIO_SECRET_KEY"
-MONGO_URI="mongodb://localhost:27017/"
-MONGO_DB_NAME="sonicarc_db"
+```mermaid
+sequenceDiagram
+actor User
+participant UI as React Frontend
+participant Node as Node / Express
+participant AI as AI Adaptation Service
+participant Gemini as Gemini API
+
+User->>UI: Select instrument
+User->>UI: Select skill level
+User->>UI: Request adaptation
+
+UI->>Node: Detected chords + key + BPM + preferences
+Node->>AI: Validate adaptation request
+
+AI->>Gemini: Structured musical data and preferences
+Gemini-->>AI: Structured chord adaptation
+
+AI->>AI: Validate model response
+
+alt Valid AI response
+AI-->>Node: Adapted chords
+Node-->>UI: Personalized adaptation
+UI-->>User: Display playable result
+else Invalid or unavailable response
+AI-->>Node: Error
+Node-->>UI: Preserve original analysis
+UI-->>User: Display original detected result
+end
 ```
 
-### 2. Run the Flask Backend
+---
+
+## 6. LLM Data Flow
+
+```mermaid
+flowchart LR
+A["Raw Audio"] --> DSP["Deterministic Audio Analysis"]
+
+DSP --> CH["Detected Chords"]
+DSP --> NOTE["Detected Notes"]
+DSP --> META["Key + BPM"]
+
+CH --> UI["Application State"]
+NOTE --> UI
+META --> UI
+
+UI --> DISPLAY["Chord & Note Visualization"]
+
+CH --> REQUEST["AI Adaptation Request"]
+META --> REQUEST
+
+INST["Instrument"] --> REQUEST
+SKILL["Skill Level"] --> REQUEST
+
+REQUEST --> GEMINI["Gemini API"]
+
+GEMINI --> VALIDATE["Validate Structured Response"]
+
+VALIDATE --> RESULT["Personalized Chord Adaptation"]
+
+RESULT --> FINAL["Playable Result"]
+
+A -. "Raw audio is not sent to Gemini" .-> GEMINI
+NOTE -. "Note events are displayed separately" .-> DISPLAY
+```
+
+---
+
+## Design Principle
+
+SonicArc uses two different computational approaches for two different problems:
+
+```text
+Audio
+↓
+Deterministic Signal Processing
+↓
+Chords + Notes + Key + BPM
+↓
+────────────────────────────
+↓
+Gemini LLM
+↓
+Personalized Chord Adaptation
+↓
+Playable Result
+```
+
+Raw audio is not sent to Gemini for chord or note recognition.
+
+This separation makes the analysis reproducible and keeps the LLM focused on contextual musical adaptation rather than pretending that generative AI is an audio-analysis algorithm.
+
+---
+
+## Running the Project
+
+### Frontend / Application Server
+
+From the project root:
+
+```bash
+npm install
+npm run dev -- --host 0.0.0.0
+```
+
+### Python Audio Backend
+
+From the backend directory:
+
 ```bash
 cd backend
-pip install -r requirements.txt
 python app.py
 ```
 
-### 3. Start the React Frontend Sandbox
-```bash
-npm install
-npm run dev
-```
-Navigate to `http://localhost:3000` to start classifying sound profiles.
+The Flask backend runs on port `5000`.
 
-## Chord and melody-note detection
+The Vite development server runs on port `3000` and proxies analysis requests to the backend.
 
-The Studio Control Desk sends dropped or selected audio to the existing Flask
-backend at `POST /api/analyze-chords`. The endpoint accepts multipart form data
-under `file`, or JSON containing `audioData`, `mimeType`, and optionally
-`filename`. A successful response contains the detected key, optional BPM,
-duration, chronological chord regions, and a separate sequence of dominant-pitch
-note events:
+---
 
-```json
-{
-  "filename": "progression.wav",
-  "mime_type": "audio/wav",
-  "analysis": {
-    "key": "C Major",
-    "key_confidence": 0.42,
-    "bpm": 120.0,
-    "bpm_confidence": 0.61,
-    "duration": 8.0,
-    "chords": [
-      {"chord": "C Major", "start": 0.0, "end": 2.0, "confidence": 0.73}
-    ],
-    "notes": [
-      {"note": "E4", "midi": 64, "frequency": 329.63, "start": 0.42, "end": 0.78, "confidence": 0.88}
-    ],
-    "method": "harmonic-cqt-template-v1",
-    "note_method": "pyin-dominant-pitch-v1"
-  }
-}
+## Environment Variables
+
+Create a local `.env` file containing:
+
+```text
+GEMINI_API_KEY=your_api_key_here
 ```
 
-Install and run both processes locally:
+Never commit the `.env` file or expose the Gemini API key in frontend code.
+
+---
+
+## Testing
+
+The project includes tests for audio analysis and application behavior.
+
+Backend tests include cases for:
+
+- Single clean notes
+- Scales
+- Melody over accompaniment
+- Silence
+- Deterministic noise
+- Chord-analysis regression
+- API response structure
+
+Run the backend test suite with:
 
 ```bash
-python -m pip install -r backend/requirements.txt
-python backend/app.py
-# In another terminal:
-npm install
-npm run dev
+python -m pytest backend/tests -q
 ```
 
-Test an audio file directly (the frontend dev server proxies `/api` to Flask):
+Run the JavaScript test suite with:
 
 ```bash
-curl -F "file=@/absolute/path/to/audio.wav" http://localhost:5000/api/analyze-chords
-python -m pytest backend/tests
+npm test
 ```
 
-`librosa` supplies harmonic/percussive separation, constant-Q chroma, onset,
-beat features, and deterministic pYIN fundamental-frequency estimation;
-`soundfile` provides reliable WAV/FLAC decoding. Browser
-recordings (WebM/Opus in Chrome and Edge, MP4/AAC in Safari, or OGG/Opus where
-available) and uploaded compressed files are normalized to mono PCM WAV before
-analysis. The pinned `imageio-ffmpeg` Python dependency supplies the FFmpeg
-executable, so a separate system FFmpeg installation is not required. The current
-detector recognizes major and minor triads plus `N` (no reliable chord). It
-does not yet distinguish inversions, seventh/extended chords, or slash chords.
-Dense arrangements, tuning drift, fast changes, and half/double-tempo ambiguity
-can reduce accuracy. Unreliable tempo is returned as `null`, and invalid,
-silent, or harmonically inconclusive audio returns an error rather than a
-fabricated progression.
+---
 
-The note tracker is a separate stage and does not replace or feed the chord
-classifier. It median-smooths pYIN frames, rejects unvoiced, low-energy,
-low-probability, spectrally noisy, and poorly tuned frames, bridges only a
-single-frame dropout between matching notes, and merges equal adjacent pitches
-into events of at least 90 ms. It is intended for monophonic melody or the
-dominant pitch in a mix. Dense polyphony, quiet melody beneath accompaniment,
-very low/high notes outside C2–C7, strong inharmonicity, and overlapping voices
-can reduce note accuracy. No audio or pitch data is sent to Gemini for this
-analysis; note detection is entirely local signal processing.
+## Current Limitations
 
-## AI chord adaptation
+Pitch detection is designed for dominant melodic pitch and may be less reliable when:
 
-After chord detection completes, the browser can send its structured result to
-`POST /api/adapt-chords`. This Node/Express endpoint calls Google Gemini 2.5
-Flash on the server; `GEMINI_API_KEY` is read only from the server environment
-and is never included in the frontend bundle. No audio is sent to this endpoint.
+- Several instruments play simultaneously
+- Multiple voices overlap
+- The melody is quiet compared with the accompaniment
+- The source contains strongly inharmonic sounds
+- The pitch falls outside the supported analysis range
 
-```json
-{
-  "instrument": "guitar",
-  "skillLevel": "beginner",
-  "detectedChords": [{ "chord": "Dm7", "start": 0, "end": 2.4 }],
-  "detectedKey": "C Major",
-  "bpm": 108
-}
-```
+These limitations do not change the existing chord-detection pipeline.
 
-The response contains `adaptedChords` entries with `original`, `adapted`, and
-`reason`, plus nullable `transposeTo` and `capo` fields and a short `summary`.
-The server validates both input and model output, including an exact positional
-match between every detected chord and every returned `original`. Invalid or
-unavailable AI output produces an error and the UI keeps the detected analysis
-unchanged rather than displaying a simulated adaptation.
+---
+
+## Summary
+
+SonicArc combines real audio analysis with LLM-powered musical personalization.
+
+Instead of asking an LLM to guess what exists inside an audio signal, SonicArc first extracts measurable musical information using deterministic DSP algorithms. Gemini is then used to reason about that structured information and adapt the chord progression to the user's instrument and playing level.
+
+The result is a system that connects audio analysis, music theory, and generative AI in a single playable workflow.
+
