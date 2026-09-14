@@ -549,6 +549,22 @@ GEMINI_API_KEY=your_api_key_here
 
 Never commit the `.env` file or expose the Gemini API key in frontend code.
 
+## Deploying on Render
+
+The repository includes a Render Blueprint that creates both required services:
+
+- `sonicarc`: the production Node/Express server, which serves the built React app and the Node API routes.
+- `sonicarc-audio-backend`: the Gunicorn-hosted Flask service for deterministic audio analysis.
+
+To deploy:
+
+1. Push the repository to GitHub.
+2. In Render, create a new **Blueprint** and select the repository.
+3. Enter `GEMINI_API_KEY` when Render prompts for the `sonicarc-secrets` environment group.
+4. Apply the Blueprint.
+
+Render supplies `PORT` automatically and connects the Node service to Flask through the generated `FLASK_BACKEND_URL`. The browser continues to use the existing same-origin `/api/...` routes, so no frontend configuration or cross-origin setup is required.
+
 ---
 
 ## Testing

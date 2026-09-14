@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
+import { createProxyMiddleware } from "http-proxy-middleware";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import {
@@ -14,13 +15,30 @@ import {
 dotenv.config();
 
 const app = express();
+
+const flaskBackend = process.env.FLASK_BACKEND_URL || "http://127.0.0.1:5000";
+const flaskBackendUrl = /^https?:\/\//.test(flaskBackend)
+  ? flaskBackend
+  : `http://${flaskBackend}`;
+
+// Keep audio uploads on the same public origin while the analysis work is
+// handled by the separately scalable Flask service.
+app.use(
+  "/api/analyze-chords",
+  createProxyMiddleware({
+    target: flaskBackendUrl,
+    changeOrigin: true,
+    pathRewrite: { "^/": "/api/analyze-chords" },
+  }),
+);
+
 app.use(express.json());
 
 // Set up limit for base64 sound data bodies safely
 app.use(express.json({ limit: "25mb" }));
 app.use(express.urlencoded({ limit: "25mb", extended: true }));
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 // Local Simulated MongoDB collection for Node environment preview
 interface InstrumentAnalysis {
