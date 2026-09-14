@@ -26,6 +26,16 @@ export interface ChordAnalysisResponse {
   mime_type?: string;
 }
 
+export type AdaptationInstrument = "guitar" | "piano";
+export type AdaptationSkill = "beginner" | "intermediate" | "advanced";
+
+export interface ChordAdaptationResponse {
+  adaptedChords: Array<{ original: string; adapted: string; reason: string }>;
+  transposeTo: string | null;
+  capo: number | null;
+  summary: string;
+}
+
 export interface SqlTable {
   name: string;
   description: string;

@@ -177,7 +177,23 @@
 .user-app .segmented button.active { color: var(--paper); background: #555f47; box-shadow: none; }
 .user-app .adapt-button { grid-column: 2; min-height: 42px; padding: 10px 16px; justify-self: start; background: none; border: 1px solid #a9ad9d; color: var(--ink); font-size: 12px; }
 .user-app .adapt-button:hover { background: #e4e5d6; }
+.user-app .adapt-button:disabled { cursor: wait; opacity: .62; }
 .user-app .integration-notice { grid-column: 3; margin: 0; font-size: 11px; line-height: 1.6; color: var(--muted); }
+.user-app .adaptation-error { grid-column: 3; margin: 0; color: #8b3329; font-size: 12px; line-height: 1.6; }
+.user-app .adaptation-result { grid-column: 1 / -1; margin-top: 12px; padding: 24px; border: 1px solid #c7c9b9; background: rgba(255,255,255,.25); }
+.user-app .adaptation-heading { display: flex; justify-content: space-between; gap: 20px; padding-bottom: 16px; border-bottom: 1px solid #d2d3c5; }
+.user-app .adaptation-heading div { display: flex; flex-direction: column; gap: 4px; }
+.user-app .adaptation-heading span { color: var(--muted); font: 10px 'SonicArc Mono', monospace; text-transform: uppercase; letter-spacing: .13em; }
+.user-app .adaptation-heading strong { font-size: 17px; }
+.user-app .adaptation-heading p, .user-app .adaptation-summary { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.user-app .adaptation-summary { max-width: 700px; padding: 16px 0; }
+.user-app .adapted-chords { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1px; margin: 0; padding: 1px; list-style: none; background: #d2d3c5; }
+.user-app .adapted-chords li { min-width: 0; padding: 14px; background: var(--paper); }
+.user-app .adapted-chords li div { display: flex; align-items: baseline; gap: 9px; }
+.user-app .adapted-chords li span { color: var(--muted); text-decoration: line-through; }
+.user-app .adapted-chords li i { color: var(--muted); font-style: normal; }
+.user-app .adapted-chords li strong { font-size: 17px; }
+.user-app .adapted-chords li p { margin: 7px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
 
 @keyframes desk-spin { to { transform: rotate(360deg); } }
 @keyframes desk-wave { to { transform: scaleY(.3); opacity: .4; } }
@@ -207,7 +223,7 @@
   .user-app .play-section > div:first-child { grid-column: 1 / -1; grid-row: auto; }
   .user-app .play-section > div:first-child p:last-child { max-width: 480px; }
   .user-app .adapt-button { grid-column: 1; }
-  .user-app .integration-notice { grid-column: 2; }
+  .user-app .integration-notice, .user-app .adaptation-error { grid-column: 2; }
 }
 @media (max-width: 760px) {
   .user-app { padding-inline: 22px; }
@@ -310,7 +326,8 @@
   .user-app .chord-segment { min-width: 110px; min-height: 143px; }
   .user-app .chord-detail { align-items: start; gap: 10px; }
   .user-app .play-section { grid-template-columns: 1fr; gap: 22px; }
-  .user-app .play-section > div:first-child, .user-app .adapt-button, .user-app .integration-notice { grid-column: 1; }
+  .user-app .play-section > div:first-child, .user-app .adapt-button, .user-app .integration-notice, .user-app .adaptation-error { grid-column: 1; }
+  .user-app .adaptation-heading { flex-direction: column; gap: 8px; }
   .user-app .segmented button { min-height: 46px; }
   .user-app .drop-overlay strong { font-size: 34px; }
 }

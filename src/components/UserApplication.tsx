@@ -194,7 +194,7 @@ export function UserApplication({ result, sourceFile, isAnalyzing, error, analyz
               <ChordTimeline chords={result.analysis.chords} duration={result.analysis.duration} selectedIndex={selectedChord} onSelect={setSelectedChord} />
               {activeChord && <div className="chord-detail"><strong>{activeChord.chord}</strong><p>{Math.round(activeChord.confidence * 100)}% confidence · {instrument} fingering guidance will appear here in a future update.</p></div>}
             </section>
-            <PlayItYourself instrument={instrument} onInstrumentChange={setInstrument} />
+            <PlayItYourself analysis={result.analysis} instrument={instrument} onInstrumentChange={setInstrument} />
           </div>
         ) : (
           <ol className="session-guide" aria-label="How SonicArc works">
