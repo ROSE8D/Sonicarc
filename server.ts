@@ -1,10 +1,10 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { createProxyMiddleware } from "http-proxy-middleware";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import { resolveFlaskBackendUrl } from "./deploymentConfig";
+import { createChordAnalysisProxy } from "./chordAnalysisProxy";
 import {
   ADAPTATION_MODEL,
   adaptationResponseSchema,
@@ -21,14 +21,7 @@ const flaskBackendUrl = resolveFlaskBackendUrl();
 
 // Keep audio uploads on the same public origin while the analysis work is
 // handled by the separately scalable Flask service.
-app.use(
-  "/api/analyze-chords",
-  createProxyMiddleware({
-    target: flaskBackendUrl,
-    changeOrigin: true,
-    pathRewrite: { "^/": "/api/analyze-chords" },
-  }),
-);
+app.use(createChordAnalysisProxy(flaskBackendUrl));
 
 app.use(express.json());
 
