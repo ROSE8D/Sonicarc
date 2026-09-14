@@ -88,9 +88,20 @@ def analyze_chords():
         if not audio_content:
             return jsonify({"error": "An audio file is required."}), 400
 
-        result = chord_analyzer.analyze_bytes(audio_content, suffix=os.path.splitext(filename)[1])
+        app.logger.info(
+            "Chord audio received: filename=%s mime_type=%s bytes=%d",
+            filename,
+            mime_type,
+            len(audio_content),
+        )
+        result = chord_analyzer.analyze_bytes(
+            audio_content,
+            suffix=os.path.splitext(filename)[1],
+            mime_type=mime_type,
+        )
         return jsonify({"analysis": result, "filename": filename, "mime_type": mime_type}), 200
     except ChordAnalysisError as exc:
+        app.logger.warning("Chord audio rejected: filename=%s mime_type=%s error=%s", filename, mime_type, exc)
         return jsonify({"error": str(exc)}), 422
     except Exception as exc:
         app.logger.exception("Chord analysis failed")

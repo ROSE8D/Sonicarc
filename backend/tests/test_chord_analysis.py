@@ -1,5 +1,9 @@
 from io import BytesIO
+from pathlib import Path
+import subprocess
+import tempfile
 
+import imageio_ffmpeg
 import numpy as np
 import soundfile as sf
 
@@ -18,6 +22,19 @@ def synthesize_progression() -> bytes:
     output = BytesIO()
     sf.write(output, np.concatenate(parts), sample_rate, format="WAV", subtype="PCM_16")
     return output.getvalue()
+
+
+def synthesize_browser_recording() -> bytes:
+    """Encode the same real signal as Chrome/Edge MediaRecorder WebM/Opus."""
+    with tempfile.TemporaryDirectory() as directory:
+        wav_path = Path(directory) / "source.wav"
+        webm_path = Path(directory) / "recording.webm"
+        wav_path.write_bytes(synthesize_progression())
+        subprocess.run(
+            [imageio_ffmpeg.get_ffmpeg_exe(), "-v", "error", "-y", "-i", str(wav_path), "-c:a", "libopus", str(webm_path)],
+            check=True,
+        )
+        return webm_path.read_bytes()
 
 
 def test_analyzer_returns_real_timed_chords_and_key():
@@ -56,6 +73,25 @@ def test_chord_endpoint_accepts_multipart_audio():
     assert payload["filename"] == "progression.wav"
     assert payload["analysis"]["method"] == "harmonic-cqt-template-v1"
     assert payload["analysis"]["chords"]
+
+
+def test_chord_endpoint_decodes_browser_webm_opus(caplog):
+    client = app.test_client()
+    with caplog.at_level("INFO"):
+        response = client.post(
+            "/api/analyze-chords",
+            data={"file": (BytesIO(synthesize_browser_recording()), "sonicarc-recording.webm", "audio/webm;codecs=opus")},
+            content_type="multipart/form-data",
+        )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["filename"] == "sonicarc-recording.webm"
+    assert payload["mime_type"].startswith("audio/webm")
+    assert payload["analysis"]["method"] == "harmonic-cqt-template-v1"
+    assert "filename=sonicarc-recording.webm" in caplog.text
+    assert "format=webm" in caplog.text
+    assert "decoded_format=wav/pcm_s16le" in caplog.text
 
 
 def test_chord_endpoint_rejects_missing_audio():

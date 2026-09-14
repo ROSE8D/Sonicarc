@@ -10,16 +10,39 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from pathlib import Path
+import logging
+import subprocess
 import tempfile
 
 import librosa
 import numpy as np
+import imageio_ffmpeg
 from scipy.ndimage import median_filter
 
 
 NOTE_NAMES = ("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
 MAJOR_PROFILE = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
 MINOR_PROFILE = np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17])
+logger = logging.getLogger(__name__)
+
+
+def detect_audio_format(audio: bytes) -> str:
+    """Identify common browser/upload containers without trusting metadata."""
+    if audio.startswith(b"RIFF") and audio[8:12] == b"WAVE":
+        return "wav"
+    if audio.startswith(b"\x1aE\xdf\xa3"):
+        return "webm"
+    if audio.startswith(b"OggS"):
+        return "ogg"
+    if audio.startswith(b"fLaC"):
+        return "flac"
+    if len(audio) >= 12 and audio[4:8] == b"ftyp":
+        return "mp4/m4a"
+    if audio.startswith(b"ID3") or audio[:2] in (b"\xff\xfb", b"\xff\xf3", b"\xff\xf2"):
+        return "mp3"
+    if len(audio) >= 2 and audio[0] == 0xFF and audio[1] & 0xF6 == 0xF0:
+        return "aac"
+    return "unknown"
 
 
 class ChordAnalysisError(ValueError):
@@ -55,24 +78,50 @@ class ChordAnalyzer:
                 labels.append(f"{note} {quality}")
         return np.asarray(templates), labels
 
-    def analyze_bytes(self, audio: bytes, suffix: str = ".wav") -> dict:
+    def analyze_bytes(self, audio: bytes, suffix: str = ".wav", mime_type: str | None = None) -> dict:
         if not audio:
             raise ChordAnalysisError("The uploaded audio file is empty.")
         safe_suffix = suffix if suffix.lower() in {".wav", ".mp3", ".flac", ".ogg", ".m4a", ".webm", ".aac"} else ".audio"
         path = None
+        decoded_path = None
+        detected_format = detect_audio_format(audio)
+        logger.info("Audio format detected: format=%s mime_type=%s suffix=%s", detected_format, mime_type or "unknown", suffix or "none")
         try:
             with tempfile.NamedTemporaryFile(suffix=safe_suffix, delete=False) as handle:
                 handle.write(audio)
                 path = Path(handle.name)
-            return self.analyze_file(path)
+            analysis_path = path
+            # libsndfile does not consistently support MediaRecorder containers.
+            # Normalize compressed/browser output to PCM WAV using the bundled
+            # imageio-ffmpeg executable before entering the unchanged detector.
+            if detected_format not in {"wav", "flac"}:
+                with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as handle:
+                    decoded_path = Path(handle.name)
+                command = [imageio_ffmpeg.get_ffmpeg_exe(), "-v", "error", "-y", "-i", str(path), "-vn", "-ac", "1", "-ar", str(self.sample_rate), "-c:a", "pcm_s16le", str(decoded_path)]
+                try:
+                    subprocess.run(command, check=True, capture_output=True, text=True)
+                except (OSError, subprocess.CalledProcessError) as exc:
+                    details = exc.stderr.strip() if isinstance(exc, subprocess.CalledProcessError) and exc.stderr else str(exc)
+                    logger.warning("Audio decoding failed: detected_format=%s error=%s", detected_format, details, exc_info=True)
+                    raise ChordAnalysisError("Audio could not be decoded. Use WAV, MP3, FLAC, OGG, M4A, AAC, or WebM audio.") from exc
+                analysis_path = decoded_path
+            result = self.analyze_file(analysis_path)
+            if decoded_path:
+                logger.info("Audio decoded: source_format=%s decoded_format=wav/pcm_s16le sample_rate=%s", detected_format, self.sample_rate)
+            else:
+                logger.info("Audio decoded: source_format=%s decoded_format=%s/native", detected_format, detected_format)
+            return result
         finally:
             if path:
                 path.unlink(missing_ok=True)
+            if decoded_path:
+                decoded_path.unlink(missing_ok=True)
 
     def analyze_file(self, path: str | Path) -> dict:
         try:
             signal, sample_rate = librosa.load(path, sr=self.sample_rate, mono=True)
         except Exception as exc:
+            logger.warning("Audio decoding failed: path=%s error=%s", path, exc, exc_info=True)
             raise ChordAnalysisError("Audio could not be decoded. Use WAV, MP3, FLAC, OGG, M4A, AAC, or WebM audio.") from exc
 
         duration = float(librosa.get_duration(y=signal, sr=sample_rate))

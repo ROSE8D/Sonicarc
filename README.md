@@ -212,8 +212,11 @@ python -m pytest backend/tests
 ```
 
 `librosa` supplies harmonic/percussive separation, constant-Q chroma, onset,
-and beat features; `soundfile` provides reliable WAV/FLAC decoding. Compressed
-formats may additionally require the system FFmpeg decoder. The current
+and beat features; `soundfile` provides reliable WAV/FLAC decoding. Browser
+recordings (WebM/Opus in Chrome and Edge, MP4/AAC in Safari, or OGG/Opus where
+available) and uploaded compressed files are normalized to mono PCM WAV before
+analysis. The pinned `imageio-ffmpeg` Python dependency supplies the FFmpeg
+executable, so a separate system FFmpeg installation is not required. The current
 detector recognizes major and minor triads plus `N` (no reliable chord). It
 does not yet distinguish inversions, seventh/extended chords, or slash chords.
 Dense arrangements, tuning drift, fast changes, and half/double-tempo ambiguity
