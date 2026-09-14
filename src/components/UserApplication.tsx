@@ -5,6 +5,7 @@ import { ChordTimeline } from "./ChordTimeline";
 import { PlayItYourself, type Instrument } from "./PlayItYourself";
 import { Turntable } from "./Turntable";
 import "../consumer.css";
+import { preferredRecordingMimeType, recordingExtension } from "../audioRecording";
 
 interface Props {
   result: ChordAnalysisResponse | null;
@@ -67,12 +68,15 @@ export function UserApplication({ result, sourceFile, isAnalyzing, error, analyz
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream; chunksRef.current = [];
-      const recorder = new MediaRecorder(stream);
+      const preferredMime = preferredRecordingMimeType();
+      const recorder = preferredMime ? new MediaRecorder(stream, { mimeType: preferredMime }) : new MediaRecorder(stream);
       recorderRef.current = recorder;
       recorder.ondataavailable = event => { if (event.data.size) chunksRef.current.push(event.data); };
       recorder.onstop = () => {
-        const mime = recorder.mimeType || "audio/webm";
-        const extension = mime.includes("ogg") ? "ogg" : mime.includes("mp4") ? "m4a" : "webm";
+        // recorder.mimeType describes the container actually emitted (including
+        // its codec); never label these encoded bytes as WAV.
+        const mime = recorder.mimeType || chunksRef.current[0]?.type || preferredMime || "application/octet-stream";
+        const extension = recordingExtension(mime);
         const blob = new Blob(chunksRef.current, { type: mime });
         stream.getTracks().forEach(track => track.stop());
         streamRef.current = null;
