@@ -220,3 +220,27 @@ Dense arrangements, tuning drift, fast changes, and half/double-tempo ambiguity
 can reduce accuracy. Unreliable tempo is returned as `null`, and invalid,
 silent, or harmonically inconclusive audio returns an error rather than a
 fabricated progression.
+
+## AI chord adaptation
+
+After chord detection completes, the browser can send its structured result to
+`POST /api/adapt-chords`. This Node/Express endpoint calls Google Gemini 2.5
+Flash on the server; `GEMINI_API_KEY` is read only from the server environment
+and is never included in the frontend bundle. No audio is sent to this endpoint.
+
+```json
+{
+  "instrument": "guitar",
+  "skillLevel": "beginner",
+  "detectedChords": [{ "chord": "Dm7", "start": 0, "end": 2.4 }],
+  "detectedKey": "C Major",
+  "bpm": 108
+}
+```
+
+The response contains `adaptedChords` entries with `original`, `adapted`, and
+`reason`, plus nullable `transposeTo` and `capo` fields and a short `summary`.
+The server validates both input and model output, including an exact positional
+match between every detected chord and every returned `original`. Invalid or
+unavailable AI output produces an error and the UI keeps the detected analysis
+unchanged rather than displaying a simulated adaptation.

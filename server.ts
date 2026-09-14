@@ -3,6 +3,13 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
+import {
+  ADAPTATION_MODEL,
+  adaptationResponseSchema,
+  buildAdaptationPrompt,
+  validateAdaptationRequest,
+  validateAdaptationResponse,
+} from "./aiAdaptation";
 
 dotenv.config();
 
@@ -84,6 +91,42 @@ app.get("/api/health", (req, res) => {
     geminiConnected: isGeminiAvailable(),
     time: new Date().toISOString()
   });
+});
+
+// Adapt only the authoritative chord-analysis output; this endpoint never receives audio.
+app.post("/api/adapt-chords", async (req, res) => {
+  const request = validateAdaptationRequest(req.body);
+  if (!request) {
+    return res.status(400).json({ error: "Invalid adaptation request. Supply an instrument, skill level, and detected chord events." });
+  }
+
+  const gemini = initGemini();
+  if (!gemini) {
+    return res.status(503).json({ error: "AI adaptation is unavailable because the server is not configured." });
+  }
+
+  try {
+    const response = await gemini.models.generateContent({
+      model: ADAPTATION_MODEL,
+      contents: buildAdaptationPrompt(request),
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: adaptationResponseSchema,
+        temperature: 0.2,
+      },
+    });
+    if (!response.text) throw new Error("Empty AI response");
+
+    let parsed: unknown;
+    try { parsed = JSON.parse(response.text); }
+    catch { throw new Error("AI returned malformed JSON"); }
+    const validated = validateAdaptationResponse(parsed, request);
+    if (!validated) throw new Error("AI response failed schema or chord provenance validation");
+    return res.json(validated);
+  } catch (error) {
+    console.error("Chord adaptation failed:", error);
+    return res.status(502).json({ error: "We couldn't adapt this progression right now. Your detected chords are unchanged; please try again." });
+  }
 });
 
 // GET query history of identified instruments (MongoDB mock simulation)
