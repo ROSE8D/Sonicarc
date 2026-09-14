@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import { createProxyMiddleware } from "http-proxy-middleware";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
+import { resolveFlaskBackendUrl } from "./deploymentConfig";
 import {
   ADAPTATION_MODEL,
   adaptationResponseSchema,
@@ -16,10 +17,7 @@ dotenv.config();
 
 const app = express();
 
-const flaskBackend = process.env.FLASK_BACKEND_URL || "http://127.0.0.1:5000";
-const flaskBackendUrl = /^https?:\/\//.test(flaskBackend)
-  ? flaskBackend
-  : `http://${flaskBackend}`;
+const flaskBackendUrl = resolveFlaskBackendUrl();
 
 // Keep audio uploads on the same public origin while the analysis work is
 // handled by the separately scalable Flask service.

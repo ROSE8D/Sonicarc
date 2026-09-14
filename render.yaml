@@ -13,7 +13,9 @@ services:
         fromService:
           type: web
           name: sonicarc-audio-backend
-          property: host
+          # Include Render's service port. `host` alone produces a target that
+          # defaults to port 80 instead of the Flask service's assigned PORT.
+          property: hostport
       - fromGroup: sonicarc-secrets
 
   - type: web
